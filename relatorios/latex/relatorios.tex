@@ -1,0 +1,276 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Idioma e codificação ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+
+% --- Layout ---
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+% --- Tabelas, cores e código ---
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+
+% --- Links e metadados ---
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    urlcolor=blue!50!black,
+    citecolor=blue!50!black,
+    pdftitle={Sucuri --- Relatório de análises: Despesas com Ensino Superior},
+    pdfauthor={Projeto Sucuri}
+}
+
+\definecolor{codebg}{RGB}{245,245,245}
+\lstset{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    showstringspaces=false,
+    columns=fullflexible,
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Sucuri --- Detecção de anomalias em despesas públicas}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcommand{\aceite}{\textcolor{green!45!black}{\textbf{OK}}}
+
+\title{\textbf{Sucuri}\\[0.3em]
+\large Detecção de anomalias em despesas federais com Ensino Superior\\
+\large Relatório consolidado de análises, medidas e interpretações}
+\author{Portal da Transparência (gov.br) --- Ministério da Educação}
+\date{Atualizado em 16 de julho de 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent Este documento é a versão em \LaTeX{} de \texttt{relatorios/RELATORIO.md}
+e deve conter, ao final do projeto, todas as análises, medidas estatísticas e
+interpretações produzidas ao longo das fases do \texttt{ROADMAP.md}. A versão
+atual documenta exclusivamente a \textbf{Fase 0 --- Infraestrutura do
+projeto}, que prepara a base de código para as análises de dados das fases
+seguintes; nenhuma conclusão sobre despesas é apresentada aqui ainda.
+\end{abstract}
+
+\tableofcontents
+\vspace{1em}
+
+\section{Objetivo desta fase}
+
+A Fase 0 do ROADMAP não produz análises sobre as despesas em si --- seu
+objetivo é transformar o projeto de um único script
+(\texttt{coletar\_despesas.py}) em uma base de código reprodutível, testável
+e reutilizável pelas fases seguintes (qualidade de dados, deflação, detecção
+de anomalias). Esta seção documenta \textbf{o que foi feito}; interpretações
+sobre os dados de despesas começam na Fase~1/2 e serão anexadas como novas
+seções deste mesmo documento.
+
+\section{Tarefa 0.1 --- Empacotamento e ambiente}
+
+\subsection{Estrutura criada}
+
+\begin{lstlisting}[language=bash]
+pyproject.toml            # projeto gerenciado por uv (PEP 621 + hatchling)
+uv.lock                   # lockfile de dependencias
+src/sucuri/
+  __init__.py
+  api.py                  # cliente da API do Portal da Transparencia
+  features.py             # engenharia de variaveis e construcao dos paineis A/B
+  persistencia.py         # salvamento de CSV/Parquet/JSON bruto e dicionario
+  utils.py                # brl_para_float, razao_segura, classificar_instituicao
+analises/                 # reservado para as fases 1-2 (vazio nesta fase)
+relatorios/
+  figuras/                # reservado para as fases 1-2 (vazio nesta fase)
+  latex/                  # este relatorio em LaTeX/PDF
+tests/
+  __init__.py
+  test_utils.py
+  test_features.py
+coletar_despesas.py       # CLI fino: apenas argparse + orquestracao
+\end{lstlisting}
+
+\subsection{Migração de código}
+
+Toda a lógica reutilizável de \texttt{coletar\_despesas.py} foi movida para o
+pacote \texttt{src/sucuri/}, preservando exatamente o comportamento original
+(mesmos parâmetros de API, mesmas fórmulas, mesmo formato de saída).
+A Tabela~\ref{tab:migracao} resume o mapeamento.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{4.2cm}p{4.2cm}p{4.6cm}@{}}
+\toprule
+\textbf{Função/constante} & \textbf{Origem (script único)} & \textbf{Destino} \\
+\midrule
+\texttt{brl\_para\_float}, \texttt{\_razao\_segura}, \texttt{classificar\_instituicao} &
+topo do script &
+\texttt{sucuri/utils.py} (\texttt{razao\_segura} tornada pública) \\
+\addlinespace
+\texttt{carregar\_chave\_api}, \texttt{criar\_sessao}, \texttt{requisitar}, \texttt{coletar\_paginado}, \texttt{coletar\_intervalo} &
+seção ``Coleta genérica'' &
+\texttt{sucuri/api.py} \\
+\addlinespace
+\texttt{construir\_df\_funcional}, \texttt{construir\_df\_instituicao}, \texttt{\_indicadores\_execucao}, \texttt{\_features\_serie\_temporal}, \texttt{\_consolidar\_flags} &
+seções (A)/(B) e ``Engenharia de variáveis'' &
+\texttt{sucuri/features.py} (funções tornadas públicas) \\
+\addlinespace
+\texttt{salvar\_dataset}, \texttt{escrever\_dicionario}, \texttt{DICIONARIO}, \texttt{resumir} &
+seção ``Persistência'' &
+\texttt{sucuri/persistencia.py} \\
+\bottomrule
+\end{tabular}
+\caption{Mapeamento das funções migradas do script único para o pacote \texttt{sucuri}.}
+\label{tab:migracao}
+\end{table}
+
+O arquivo \texttt{coletar\_despesas.py} (antes
+\texttt{coletar\_despesas\_ensino\_superior.py}) ficou reduzido a
+aproximadamente 125 linhas: apenas \texttt{argparse}, orquestração das
+coletas (A) e (B), e chamadas às funções do pacote. Nenhuma fórmula ou regra
+de negócio foi alterada durante a migração --- apenas reorganizada em
+módulos.
+
+\subsection{Dependências}
+
+Gerenciadas por \texttt{uv}: \texttt{pandas}, \texttt{pyarrow},
+\texttt{requests}, \texttt{python-dotenv}, \texttt{scikit-learn},
+\texttt{scipy}, \texttt{matplotlib} (produção); \texttt{ruff},
+\texttt{pytest} (grupo \texttt{dev}). O comando \texttt{uv sync --group dev}
+cria o ambiente virtual e resolve o lockfile em poucos segundos.
+
+\subsection{Verificação dos critérios de aceite}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{9.5cm}c@{}}
+\toprule
+\textbf{Critério (ROADMAP 0.1)} & \textbf{Resultado} \\
+\midrule
+\texttt{uv run python coletar\_despesas.py --help} funciona & \aceite \\
+\texttt{uv run pytest} roda (mesmo com 0 testes) & \aceite \\
+\texttt{uv run ruff check .} sem erros & \aceite \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Tarefa 0.2 --- Testes unitários das funções críticas}
+
+\subsection{Cobertura}
+
+Foram escritos 37 testes em dois arquivos, cobrindo exatamente as funções
+indicadas no ROADMAP.
+
+\paragraph{\texttt{tests/test\_utils.py} (23 testes)}
+\begin{itemize}
+    \item \texttt{brl\_para\_float}: formato brasileiro com separador de
+    milhar (\texttt{1.059.473.395,24}), sem separador de milhar,
+    \texttt{None}, string vazia, string só com espaços, valor já numérico
+    (\texttt{int}/\texttt{float}), entrada inválida (\texttt{"abc"}
+    $\rightarrow$ \texttt{NaN}), valor negativo.
+    \item \texttt{razao\_segura}: divisão normal e \textbf{denominador zero
+    $\rightarrow$ \texttt{NaN}} (em vez de erro ou \texttt{inf}).
+    \item \texttt{classificar\_instituicao}: um caso por categoria
+    (Universidade Federal, Hospitalar/EBSERH, Instituto Federal, CEFET,
+    CAPES, Fundo FNDE/FIES, Educação Básica, Outros/Administração), mais
+    \texttt{None} e string vazia.
+\end{itemize}
+
+\paragraph{\texttt{tests/test\_features.py} (14 testes)}
+\begin{itemize}
+    \item \texttt{indicadores\_execucao}: taxas e saldos em caso normal;
+    \textbf{\texttt{empenhado == 0} $\rightarrow$ taxas \texttt{NaN} sem
+    exceção}; disparo isolado de cada flag de incoerência (\texttt{pago >
+    empenhado}, \texttt{liquidado > empenhado}, valor negativo); ausência
+    de falso positivo em valores coerentes.
+    \item \texttt{features\_serie\_temporal}: variação anual ano a ano;
+    disparo de \texttt{flag\_salto\_anual} acima de 100\%; \textbf{série
+    com desvio-padrão zero (valores constantes) não gera erro de divisão
+    por zero} e produz \texttt{zscore} \texttt{NaN} em vez de indefinido;
+    série com uma única observação; independência entre séries diferentes
+    agrupadas no mesmo DataFrame.
+    \item \texttt{consolidar\_flags}: nenhuma flag ativa, uma flag ativa,
+    flag extra (\texttt{flag\_atipico\_entre\_pares}) considerada, valores
+    nulos tratados como \texttt{False} na consolidação.
+\end{itemize}
+
+Os dois casos de borda explicitamente pedidos no ROADMAP --- \textbf{divisão
+por zero} e \textbf{série com desvio-padrão zero} --- estão cobertos e
+passam sem exceções, confirmando que as fórmulas originais
+(\texttt{.replace(0, pd.NA)}) já protegiam contra isso; os testes tornam
+essa garantia explícita e verificável automaticamente.
+
+\subsection{Resultado da execução}
+
+\begin{lstlisting}[language=bash]
+$ uv run pytest -v
+============================== 37 passed in 0.67s ==============================
+
+$ uv run ruff check .
+All checks passed!
+\end{lstlisting}
+
+\textbf{Aceite (ROADMAP 0.2):} \aceite~\texttt{uv run pytest} verde; as
+funções citadas no ROADMAP (\texttt{brl\_para\_float},
+\texttt{classificar\_instituicao}, \texttt{\_indicadores\_execucao},
+\texttt{\_features\_serie\_temporal}, \texttt{\_consolidar\_flags}) têm
+cobertura direta.
+
+\section{Validação de não regressão}
+
+Após a migração, foi confirmado por busca no repositório que não restou
+nenhuma referência às funções privadas antigas
+(\texttt{\_indicadores\_execucao}, \texttt{\_features\_serie\_temporal},
+\texttt{\_consolidar\_flags}, \texttt{\_razao\_segura}) fora do pacote
+\texttt{sucuri}, e que os módulos migrados importam e executam corretamente.
+Os dados já coletados em \texttt{dados/} (dois conjuntos, 2014--2026) não
+foram alterados nesta fase --- nenhuma recoleta foi executada.
+
+\section{Ressalvas e decisões registradas}
+
+\begin{itemize}
+    \item As funções antes privadas (\texttt{\_indicadores\_execucao} etc.)
+    foram tornadas públicas (sem \texttt{\_}) ao mover para
+    \texttt{sucuri/features.py}, pois passam a ser a API pública do pacote
+    reutilizada pelas fases seguintes. Isso é uma mudança de visibilidade,
+    não de comportamento.
+    \item \texttt{analises/} e \texttt{relatorios/figuras/} foram criados
+    vazios nesta fase --- serão populados a partir da Fase 1/2 do ROADMAP.
+    \item Nenhum dado foi recoletado; a chave \texttt{GOVBR\_API\_KEY} não
+    foi lida nem impressa durante esta fase (apenas os testes unitários,
+    que não fazem chamadas de rede, foram executados).
+\end{itemize}
+
+\section{Estado do ROADMAP}
+
+Tarefas 0.1 e 0.2 marcadas como concluídas em \texttt{ROADMAP.md}. Próxima
+tarefa pendente: \textbf{1.1 Relatório de qualidade dos dados}
+(\texttt{analises/01\_qualidade.py} $\rightarrow$
+\texttt{relatorios/01\_qualidade.md}), que passa a ser a primeira seção
+deste relatório a conter interpretação de dados reais de despesas.
+
+\section*{Instrução de manutenção deste relatório}
+\addcontentsline{toc}{section}{Instrução de manutenção deste relatório}
+
+A partir da Fase 1, toda nova tarefa do ROADMAP que gerar análise, medida
+estatística ou modelo deve acrescentar uma seção a este documento (e à
+versão Markdown em \texttt{relatorios/RELATORIO.md}) com: o que foi medido,
+o método usado, o resultado numérico e sua interpretação --- nunca apenas o
+código ou o caminho do arquivo gerado. Ver \texttt{CLAUDE.md}, seção
+``Registro de análises e relatórios''.
+
+\end{document}
