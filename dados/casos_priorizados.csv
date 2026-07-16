@@ -1,0 +1,177 @@
+conjunto,entidade,ano,pago_real,score_combinado,n_sinais,sinais,desvio_padronizado,score_anomalia_2_3,sinal_flag,sinal_outlier
+B,Fundação Universidade Federal do Acre,2025,496208775.45,0.9264100785945445,3,"zscore_robusto, outlier_multivariado(score=0.95), tendencia_robusta(desvio=4.0)",3.961573675698114,0.9542302357836339,1.0,0.9542302357836339
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Sul de Minas Gerais",2025,428389367.79,0.9233864844343205,3,"zscore_robusto, outlier_multivariado(score=0.87), tendencia_robusta(desvio=4.2)",4.158783212558221,0.8701594533029613,1.0,0.8701594533029613
+B,Universidade Federal do Oeste da Bahia,2015,49267297.400547475,0.915742024965326,3,"zscore_robusto, salto_anual, outlier_multivariado(score=1.00), tendencia_robusta(desvio=-3.5)",-3.522173573869915,0.9972260748959778,1.0,0.9972260748959778
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte",2025,941690106.26,0.8219438116932422,3,"zscore_robusto, outlier_multivariado(score=0.97), tendencia_robusta(desvio=2.9)",2.9188033605440182,0.9658314350797267,1.0,0.9658314350797267
+B,Universidade Federal da Integração Latino-Americana,2025,288817710.8,0.762575127138234,3,"zscore_robusto, outlier_multivariado(score=0.84), tendencia_robusta(desvio=2.9)",2.897595188933251,0.8377253814147019,1.0,0.8377253814147019
+B,Fundação Universidade Federal do Vale do São Francisco,2025,352500610.15,0.7221336107258437,3,"zscore_robusto, outlier_multivariado(score=0.19), tendencia_robusta(desvio=7.8)",7.81579744773657,0.19140083217753118,1.0,0.19140083217753118
+B,Universidade Federal Rural do Rio de Janeiro,2021,736752344.6119688,0.5147595931576514,3,"outlier_multivariado(score=0.62), tendencia_robusta(desvio=-4.2)",-4.211055945559876,0.6192787794729542,0.0,0.6192787794729542
+B,Universidade Federal de Ouro Preto,2025,590261678.14,0.49731853906611184,3,"outlier_multivariado(score=0.79), tendencia_robusta(desvio=3.3)",3.263257315474505,0.7919556171983356,0.0,0.7919556171983356
+B,Universidade Federal de Campina Grande,2025,955484792.86,0.4204230235783634,3,"outlier_multivariado(score=0.89), tendencia_robusta(desvio=2.8)",2.820086295991442,0.8862690707350902,0.0,0.8862690707350902
+B,Universidade Federal Rural do Rio de Janeiro,2022,736394856.9222357,0.41829634766527973,3,"outlier_multivariado(score=0.48), tendencia_robusta(desvio=-3.8)",-3.77682983290194,0.4798890429958391,0.0,0.4798890429958391
+B,Fundação Universidade de Brasília,2025,2399441685.8,0.3984743411927878,3,"outlier_multivariado(score=0.80), tendencia_robusta(desvio=2.8)",2.828365678896255,0.7954230235783634,0.0,0.7954230235783634
+B,Universidade Federal do Rio Grande do Norte,2017,2569024838.5302973,0.3983934350439205,3,"outlier_multivariado(score=0.97), tendencia_robusta(desvio=2.7)",2.722100567529143,0.9701803051317615,0.0,0.9701803051317615
+B,Fundação Universidade do Maranhão,2025,1202294694.77,0.39515718908922787,3,"outlier_multivariado(score=0.46), tendencia_robusta(desvio=3.3)",3.300156751080857,0.46047156726768373,0.0,0.46047156726768373
+B,Hospital de Clínicas de Porto Alegre,2017,2114573886.8139374,0.3753968253968254,3,"outlier_multivariado(score=0.48), tendencia_robusta(desvio=3.1)",3.1428498952741406,0.4761904761904762,0.0,0.4761904761904762
+B,Fundação Universidade Federal do Vale do São Francisco,2024,315841700.6170734,0.35962783171521034,3,"outlier_multivariado(score=0.20), tendencia_robusta(desvio=4.2)",4.154479044356295,0.2038834951456311,0.0,0.2038834951456311
+B,Ministério da Educação - Unidades com vínculo direto,2025,1617243930.71,0.35312499999999997,3,"outlier_multivariado(score=0.48), tendencia_robusta(desvio=3.0)",3.0407240829040054,0.484375,0.0,0.484375
+B,Universidade Federal do Rio Grande do Norte,2025,2176818119.24,0.3331715210355987,3,"outlier_multivariado(score=0.85), tendencia_robusta(desvio=2.6)",2.6133427508712264,0.8495145631067962,0.0,0.8495145631067962
+B,Fundação Joaquim Nabuco,2025,144509057.83,0.328125,3,"outlier_multivariado(score=0.86), tendencia_robusta(desvio=2.6)",2.6052292138432347,0.859375,0.0,0.859375
+B,Universidade Federal da Fronteira Sul,2025,391852537.76,0.3154415164123902,3,"outlier_multivariado(score=0.15), tendencia_robusta(desvio=3.8)",3.8415654967789505,0.1463245492371706,0.0,0.1463245492371706
+B,Fundação Joaquim Nabuco,2017,193145642.79139265,0.30312500000000003,3,"outlier_multivariado(score=0.73), tendencia_robusta(desvio=2.6)",2.648397871294165,0.734375,0.0,0.734375
+B,Fundação Universidade Federal do Vale do São Francisco,2021,244901971.91538137,0.2955039297272307,3,"outlier_multivariado(score=0.21), tendencia_robusta(desvio=-3.2)",-3.176365054670619,0.2115117891816921,0.0,0.2115117891816921
+B,Fundação Universidade Federal de Sergipe,2025,1060044002.38,0.29066111881645856,3,"outlier_multivariado(score=0.67), tendencia_robusta(desvio=2.7)",2.6834189432801394,0.6719833564493758,0.0,0.6719833564493758
+B,"Instituto Federal de Educação, Ciência e Tecnologia Catarinense",2017,502463843.2557981,0.2858390280941534,3,"outlier_multivariado(score=0.81), tendencia_robusta(desvio=2.6)",2.5509313646934215,0.8075170842824602,0.0,0.8075170842824602
+B,Universidade Federal de Alfenas,2025,314780639.0,0.2612228386500231,3,"outlier_multivariado(score=0.76), tendencia_robusta(desvio=2.5)",2.514125370584167,0.7586685159500693,0.0,0.7586685159500693
+B,Fundação Universidade Federal de Pelotas,2022,922297532.5788934,0.25755894590846046,3,"outlier_multivariado(score=0.67), tendencia_robusta(desvio=-2.6)",-2.590932755378936,0.6726768377253813,0.0,0.6726768377253813
+B,Universidade Federal de Ouro Preto,2021,502740597.89243144,0.25433425797503467,3,"outlier_multivariado(score=0.14), tendencia_robusta(desvio=-3.1)",-3.125762605088359,0.13800277392510402,0.0,0.13800277392510402
+B,Universidade Federal de Campina Grande,2017,1119457567.5435941,0.24638233934350437,3,"outlier_multivariado(score=0.31), tendencia_robusta(desvio=2.9)",2.8832354108174756,0.31414701803051315,0.0,0.31414701803051315
+B,Fundação Universidade Federal de São João Del-Rei,2025,444077771.97,0.2175566343042071,3,"outlier_multivariado(score=0.58), tendencia_robusta(desvio=2.6)",2.558727219724973,0.5776699029126213,0.0,0.5776699029126213
+B,Fundação Universidade Federal do Acre,2021,385230790.2516409,0.20340961627369394,3,"outlier_multivariado(score=0.14), tendencia_robusta(desvio=-2.9)",-2.9058227093736497,0.13522884882108188,0.0,0.13522884882108188
+B,Universidade Federal de Alfenas,2022,272991173.3682331,0.16956773000462322,3,"outlier_multivariado(score=0.23), tendencia_robusta(desvio=-2.7)",-2.7380547726748543,0.23370319001386963,0.0,0.23370319001386963
+B,Universidade Federal de Ouro Preto,2022,501272074.8574392,0.14923717059639388,3,"outlier_multivariado(score=0.15), tendencia_robusta(desvio=-2.7)",-2.740714539945504,0.14771151178918168,0.0,0.14771151178918168
+B,Universidade Federal de Alfenas,2021,272886618.5129955,0.14463707813222373,3,"outlier_multivariado(score=0.08), tendencia_robusta(desvio=-2.8)",-2.805176629773416,0.08391123439667125,0.0,0.08391123439667125
+B,Fundação Universidade Federal de São João Del-Rei,2021,378048896.3020248,0.12081599630143319,3,"outlier_multivariado(score=0.04), tendencia_robusta(desvio=-2.8)",-2.795151094081471,0.03744798890429957,0.0,0.03744798890429957
+A,RECONSTRUCAO E MODERNIZACAO DO MUSEU NACIONAL,2022,3801022.9584336625,1.0,2,"zscore_robusto, salto_anual, outlier_multivariado(score=1.00)",,1.0,1.0,1.0
+B,Empresa Brasileira de Serviços Hospitalares,2015,3070451882.7047853,1.0,2,"salto_anual, outlier_multivariado(score=1.00)",,1.0,1.0,1.0
+B,Universidade Federal do Cariri,2014,6960852.325296214,1.0,2,"zscore_robusto, tendencia_robusta(desvio=-7.9)",-7.933442394738038,,1.0,
+B,Universidade Federal do Sul da Bahia,2015,56904394.84036528,0.9993065187239945,2,"salto_anual, outlier_multivariado(score=1.00)",,0.9986130374479889,1.0,0.9986130374479889
+B,Universidade Federal do Norte do Tocantins,2023,33513712.65695581,0.9993065187239945,2,"salto_anual, outlier_multivariado(score=1.00)",,0.9986130374479889,1.0,0.9986130374479889
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2025,1515530941.12,0.9977220956719818,2,"zscore_robusto, atipico_entre_pares, outlier_multivariado(score=1.00)",,0.9954441913439636,1.0,0.9954441913439636
+B,Universidade Federal do Rio de Janeiro,2017,5818148111.25747,0.9951456310679612,2,"atipico_entre_pares, outlier_multivariado(score=0.99)",,0.9902912621359223,1.0,0.9902912621359223
+B,Universidade Federal do Cariri,2015,98529083.36736614,0.9951456310679612,2,"salto_anual, outlier_multivariado(score=0.99)",,0.9902912621359223,1.0,0.9902912621359223
+B,Universidade Federal do Rio de Janeiro,2016,5697322387.102416,0.9944521497919556,2,"atipico_entre_pares, outlier_multivariado(score=0.99)",,0.9889042995839112,1.0,0.9889042995839112
+B,Universidade Federal do Rio de Janeiro,2015,5518842664.109683,0.9927184466019418,2,"atipico_entre_pares, outlier_multivariado(score=0.99)",,0.9854368932038835,1.0,0.9854368932038835
+B,Universidade Federal do Rio de Janeiro,2025,4445345011.27,0.992371705963939,2,"atipico_entre_pares, outlier_multivariado(score=0.98)",,0.984743411927878,1.0,0.984743411927878
+B,Universidade Federal do Rio de Janeiro,2018,5350814640.400345,0.9895977808599168,2,"atipico_entre_pares, outlier_multivariado(score=0.98)",,0.9791955617198336,1.0,0.9791955617198336
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Mato Grosso",2025,761257722.28,0.9891799544419134,2,"zscore_robusto, outlier_multivariado(score=0.98)",,0.9783599088838268,1.0,0.9783599088838268
+A,"APOIO A CONSOLIDACAO, REESTRUTURACAO E MODERNIZACAO DAS INSTITUICOES FEDERAIS DE ENSINO SUPERIOR",2022,21726926.818883605,0.9871794871794872,2,"salto_anual, outlier_multivariado(score=0.97)",,0.9743589743589745,1.0,0.9743589743589745
+B,Universidade Federal do Rio de Janeiro,2021,4441014847.035469,0.9871705963938974,2,"atipico_entre_pares, outlier_multivariado(score=0.97)",,0.9743411927877947,1.0,0.9743411927877947
+B,Universidade Federal do Rio de Janeiro,2019,5195034844.850581,0.9864771151178918,2,"atipico_entre_pares, outlier_multivariado(score=0.97)",,0.9729542302357836,1.0,0.9729542302357836
+B,Universidade Federal do Rio de Janeiro,2023,4320322387.016796,0.9833564493758669,2,"atipico_entre_pares, outlier_multivariado(score=0.97)",,0.9667128987517337,1.0,0.9667128987517337
+B,Universidade Federal do Rio de Janeiro,2022,4289394867.2222185,0.9830097087378641,2,"atipico_entre_pares, outlier_multivariado(score=0.97)",,0.9660194174757282,1.0,0.9660194174757282
+B,Universidade Federal do Rio de Janeiro,2024,4310407194.200759,0.9823162274618585,2,"atipico_entre_pares, outlier_multivariado(score=0.96)",,0.9646324549237171,1.0,0.9646324549237171
+B,Universidade Federal do Rio de Janeiro,2020,5065951700.762594,0.9819694868238558,2,"atipico_entre_pares, outlier_multivariado(score=0.96)",,0.9639389736477115,1.0,0.9639389736477115
+B,Universidade Federal de Jataí,2021,114690100.95737585,0.9805825242718447,2,"salto_anual, outlier_multivariado(score=0.96)",,0.9611650485436893,1.0,0.9611650485436893
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2020,1178871472.2598968,0.9800683371298405,2,"atipico_entre_pares, outlier_multivariado(score=0.96)",,0.9601366742596811,1.0,0.9601366742596811
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Mato Grosso do Sul",2016,182870998.38631666,0.9755125284738041,2,"zscore_robusto, outlier_multivariado(score=0.95)",,0.9510250569476082,1.0,0.9510250569476082
+B,Universidade Federal do Oeste da Bahia,2014,2307183.2217351496,0.975,2,"zscore_robusto, tendencia_robusta(desvio=-5.9)",-5.949600799518198,,1.0,
+B,Universidade Federal do Norte do Tocantins,2024,115875011.73542987,0.970873786407767,2,"salto_anual, outlier_multivariado(score=0.94)",,0.941747572815534,1.0,0.941747572815534
+B,Universidade Federal do Sul e Sudeste do Pará,2015,103214496.92445283,0.9680998613037448,2,"zscore_robusto, outlier_multivariado(score=0.94)",,0.9361997226074896,1.0,0.9361997226074896
+B,Universidade Federal de Rondonópolis,2021,95550364.33090286,0.9663661581137309,2,"salto_anual, outlier_multivariado(score=0.93)",,0.9327323162274619,1.0,0.9327323162274619
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2015,864186148.9181342,0.9658314350797266,2,"zscore_robusto, outlier_multivariado(score=0.93)",,0.9316628701594533,1.0,0.9316628701594533
+B,Instituto Federal do Paraná,2025,670784475.94,0.9624145785876993,2,"zscore_robusto, outlier_multivariado(score=0.92)",,0.9248291571753986,1.0,0.9248291571753986
+B,Universidade Federal de Catalão,2021,109795256.5817089,0.9559639389736477,2,"salto_anual, outlier_multivariado(score=0.91)",,0.9119278779472955,1.0,0.9119278779472955
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2019,1210795941.6982613,0.9527334851936219,2,"atipico_entre_pares, outlier_multivariado(score=0.91)",,0.9054669703872438,1.0,0.9054669703872438
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2021,1101234689.1588097,0.9481776765375854,2,"atipico_entre_pares, outlier_multivariado(score=0.90)",,0.8963553530751709,1.0,0.8963553530751709
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2024,1210120471.323649,0.9447608200455581,2,"atipico_entre_pares, outlier_multivariado(score=0.89)",,0.8895216400911161,1.0,0.8895216400911161
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2022,1106672484.4014342,0.9316628701594533,2,"atipico_entre_pares, outlier_multivariado(score=0.86)",,0.8633257403189065,1.0,0.8633257403189065
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2023,1147249126.418263,0.9288154897494305,2,"atipico_entre_pares, outlier_multivariado(score=0.86)",,0.857630979498861,1.0,0.857630979498861
+B,Universidade Federal do Sul da Bahia,2014,445823.5625870033,0.925,2,"zscore_robusto, tendencia_robusta(desvio=-4.0)",-3.999001629916416,,1.0,
+A,CENSO DA EDUCACAO SUPERIOR,2018,1112596.5961385826,0.905982905982906,2,"salto_anual, outlier_multivariado(score=0.81)",,0.811965811965812,1.0,0.811965811965812
+A,CENSO DA EDUCACAO SUPERIOR,2022,306376.20677611144,0.905982905982906,2,"zscore_robusto, salto_anual, outlier_multivariado(score=0.81)",,0.811965811965812,1.0,0.811965811965812
+A,"APOIO A CONSOLIDACAO, REESTRUTURACAO E MODERNIZACAO DAS INSTITUICOES FEDERAIS DE ENSINO SUPERIOR",2023,54671491.5698511,0.8952991452991452,2,"salto_anual, outlier_multivariado(score=0.79)",,0.7905982905982906,1.0,0.7905982905982906
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Mato Grosso do Sul",2015,147179346.96155638,0.8855353075170843,2,"zscore_robusto, outlier_multivariado(score=0.77)",,0.7710706150341686,1.0,0.7710706150341686
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Pará",2015,418821378.5831613,0.8775626423690205,2,"zscore_robusto, outlier_multivariado(score=0.76)",,0.755125284738041,1.0,0.755125284738041
+A,AVALIACAO DA EDUCACAO SUPERIOR E DA POS-GRADUACAO,2022,116364345.78844011,0.8675213675213675,2,"salto_anual, outlier_multivariado(score=0.74)",,0.735042735042735,1.0,0.735042735042735
+A,AVALIACAO DA EDUCACAO SUPERIOR E DA POS-GRADUACAO,2021,37470789.786391005,0.858974358974359,2,"salto_anual, outlier_multivariado(score=0.72)",,0.717948717948718,1.0,0.717948717948718
+B,"Instituto Federal de Educação, Ciência e Tecnologia Goiano",2025,469183309.85,0.820615034168565,2,"zscore_robusto, outlier_multivariado(score=0.64)",,0.6412300683371299,1.0,0.6412300683371299
+B,Fundação Coordenação de Aperfeiçoamento de Pessoal de Nível Superior,2015,12510262289.597286,0.8,2,"zscore_robusto, tendencia_robusta(desvio=3.1)",3.1084456243146237,,1.0,
+B,Universidade Federal do Oeste da Bahia,2016,112111723.35891372,0.7864077669902912,2,"salto_anual, outlier_multivariado(score=0.57)",,0.5728155339805825,1.0,0.5728155339805825
+B,Universidade Federal do Sul e Sudeste do Pará,2025,191077469.86,0.728502080443828,2,"zscore_robusto, outlier_multivariado(score=0.46)",,0.45700416088765605,1.0,0.45700416088765605
+B,Universidade Federal do Sul e Sudeste do Pará,2014,68711295.53606051,0.625,2,"zscore_robusto, tendencia_robusta(desvio=-2.7)",-2.7282421479932526,,1.0,
+A,CENSO DA EDUCACAO SUPERIOR,2023,374648.95725134935,0.5918803418803419,2,"zscore_robusto, outlier_multivariado(score=0.18)",,0.18376068376068377,1.0,0.18376068376068377
+B,Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira,2020,554171131.0104636,0.5,2,outlier_multivariado(score=1.00),,1.0,0.0,1.0
+B,Fundação Universidade Federal do Amapá,2016,236374846.64838502,0.49826629680998613,2,outlier_multivariado(score=1.00),,0.9965325936199723,0.0,0.9965325936199723
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Mato Grosso do Sul",2017,254881112.36820436,0.4977220956719818,2,outlier_multivariado(score=1.00),,0.9954441913439636,0.0,0.9954441913439636
+B,Fundação Universidade Federal do Amapá,2019,252054284.78617638,0.4975728155339806,2,outlier_multivariado(score=1.00),,0.9951456310679612,0.0,0.9951456310679612
+B,Fundação Universidade Federal do Amapá,2018,254588645.45930874,0.4961858529819695,2,outlier_multivariado(score=0.99),,0.992371705963939,0.0,0.992371705963939
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Amapá",2025,154837290.89,0.4960136674259681,2,outlier_multivariado(score=0.99),,0.9920273348519362,0.0,0.9920273348519362
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Amapá",2021,103931389.99052177,0.49544419134396356,2,outlier_multivariado(score=0.99),,0.9908883826879271,0.0,0.9908883826879271
+B,Universidade Federal do Delta do Parnaíba,2025,110440482.66,0.4947988904299584,2,outlier_multivariado(score=0.99),,0.9895977808599168,0.0,0.9895977808599168
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Amapá",2020,114256885.89762363,0.49430523917995445,2,outlier_multivariado(score=0.99),,0.9886104783599089,0.0,0.9886104783599089
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2016,1069590641.8852382,0.49373576309794986,2,outlier_multivariado(score=0.99),,0.9874715261958997,0.0,0.9874715261958997
+B,"Instituto Federal de Educação, Ciência e Tecnologia de Rondônia",2023,276563389.23259497,0.4920273348519362,2,outlier_multivariado(score=0.98),,0.9840546697038725,0.0,0.9840546697038725
+B,Universidade Federal do Norte do Tocantins,2022,4820522.803469833,0.4920249653259362,2,outlier_multivariado(score=0.98),,0.9840499306518724,0.0,0.9840499306518724
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Amapá",2016,96877768.32597451,0.49145785876993164,2,outlier_multivariado(score=0.98),,0.9829157175398633,0.0,0.9829157175398633
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2017,1212060947.7798843,0.49145785876993164,2,outlier_multivariado(score=0.98),,0.9829157175398633,0.0,0.9829157175398633
+A,IMPLANTACAO DA UNIVERSIDADE FEDERAL DA FRONTEIRA SUL - UFFS,2015,14087650.055255832,0.49145299145299143,2,outlier_multivariado(score=0.98),,0.9829059829059829,0.0,0.9829059829059829
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Norte de Minas Gerais",2016,313424239.5672309,0.4908883826879271,2,outlier_multivariado(score=0.98),,0.9817767653758542,0.0,0.9817767653758542
+B,Fundação Universidade Federal do Amapá,2023,250454203.9219551,0.4895977808599168,2,outlier_multivariado(score=0.98),,0.9791955617198336,0.0,0.9791955617198336
+A,ATIVOS CIVIS DA UNIAO,2017,32869720182.082214,0.48931623931623935,2,outlier_multivariado(score=0.98),,0.9786324786324787,0.0,0.9786324786324787
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Acre",2015,118602883.48322771,0.4886104783599089,2,outlier_multivariado(score=0.98),,0.9772209567198178,0.0,0.9772209567198178
+B,Universidade Federal do Estado do Rio de Janeiro,2024,633092111.5160644,0.48613037447988905,2,outlier_multivariado(score=0.97),,0.9722607489597781,0.0,0.9722607489597781
+A,ATIVOS CIVIS DA UNIAO,2015,29250360278.550365,0.4807692307692308,2,outlier_multivariado(score=0.96),,0.9615384615384616,0.0,0.9615384615384616
+A,ATIVOS CIVIS DA UNIAO,2016,29937844773.998917,0.4807692307692307,2,outlier_multivariado(score=0.96),,0.9615384615384615,0.0,0.9615384615384615
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Espírito Santo",2025,976626192.64,0.4806378132118451,2,outlier_multivariado(score=0.96),,0.9612756264236902,0.0,0.9612756264236902
+B,Fundação Universidade de Brasília,2016,2537361181.717964,0.48058252427184467,2,outlier_multivariado(score=0.96),,0.9611650485436893,0.0,0.9611650485436893
+B,Universidade Federal de Catalão,2024,131471407.12881191,0.4802357836338419,2,outlier_multivariado(score=0.96),,0.9604715672676838,0.0,0.9604715672676838
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Amazonas",2020,435832159.72414535,0.4789293849658315,2,outlier_multivariado(score=0.96),,0.957858769931663,0.0,0.957858769931663
+B,Fundação Universidade Federal do Vale do São Francisco,2016,292471345.2511721,0.478502080443828,2,outlier_multivariado(score=0.96),,0.957004160887656,0.0,0.957004160887656
+B,Universidade Federal do Sul e Sudeste do Pará,2018,160431721.36894086,0.478502080443828,2,outlier_multivariado(score=0.96),,0.957004160887656,0.0,0.957004160887656
+B,Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira,2021,586818987.3860836,0.4765625,2,outlier_multivariado(score=0.95),,0.953125,0.0,0.953125
+B,Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira,2022,609196084.6055093,0.4765625,2,outlier_multivariado(score=0.95),,0.953125,0.0,0.953125
+B,Fundação Universidade Federal da Grande Dourados,2018,394596219.31408197,0.4746879334257975,2,outlier_multivariado(score=0.95),,0.949375866851595,0.0,0.949375866851595
+A,ATIVOS CIVIS DA UNIAO,2025,29084376005.9,0.47435897435897434,2,outlier_multivariado(score=0.95),,0.9487179487179487,0.0,0.9487179487179487
+B,Universidade Federal de Minas Gerais,2017,3568720538.316269,0.47156726768377255,2,outlier_multivariado(score=0.94),,0.9431345353675451,0.0,0.9431345353675451
+B,"Instituto Federal de Educação, Ciência e Tecnologia Goiano",2020,392085597.6074808,0.4703872437357631,2,outlier_multivariado(score=0.94),,0.9407744874715263,0.0,0.9407744874715263
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Maranhão",2025,1009321217.98,0.46924829157175396,2,outlier_multivariado(score=0.94),,0.9384965831435079,0.0,0.9384965831435079
+B,Universidade Federal de Minas Gerais,2015,3387930552.0099535,0.46914008321775313,2,outlier_multivariado(score=0.94),,0.9382801664355063,0.0,0.9382801664355063
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Amapá",2017,110828231.81839526,0.46867881548974943,2,outlier_multivariado(score=0.94),,0.9373576309794989,0.0,0.9373576309794989
+B,"Instituto Federal de Educação, Ciência e Tecnologia de Pernambuco",2017,716774948.8397893,0.4681093394077449,2,outlier_multivariado(score=0.94),,0.9362186788154898,0.0,0.9362186788154898
+B,Fundação Universidade de Brasília,2020,2399398030.0343657,0.4670596393897365,2,outlier_multivariado(score=0.93),,0.934119278779473,0.0,0.934119278779473
+B,Universidade Federal do Estado do Rio de Janeiro,2025,693404170.92,0.4653259361997226,2,outlier_multivariado(score=0.93),,0.9306518723994452,0.0,0.9306518723994452
+B,Fundação Universidade Federal do Amapá,2021,223412511.3968153,0.4653259361997226,2,outlier_multivariado(score=0.93),,0.9306518723994452,0.0,0.9306518723994452
+B,Universidade Federal do Agreste de Pernambuco,2025,88447822.3,0.46497919556171985,2,outlier_multivariado(score=0.93),,0.9299583911234397,0.0,0.9299583911234397
+B,"Instituto Federal de Educação, Ciência e Tecnologia de Rondônia",2016,242173060.9933028,0.4646924829157175,2,outlier_multivariado(score=0.93),,0.929384965831435,0.0,0.929384965831435
+B,Universidade Federal de Goiás,2016,1957786089.4072223,0.4646324549237171,2,outlier_multivariado(score=0.93),,0.9292649098474342,0.0,0.9292649098474342
+B,Universidade da Integração Internacional da Lusofonia Afro-Brasileira,2015,132945148.63165757,0.4646324549237171,2,outlier_multivariado(score=0.93),,0.9292649098474342,0.0,0.9292649098474342
+B,Universidade Federal de Juiz de Fora,2017,1341246710.0974555,0.46255201109570043,2,outlier_multivariado(score=0.93),,0.9251040221914009,0.0,0.9251040221914009
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2018,1165295504.841902,0.4624145785876993,2,outlier_multivariado(score=0.92),,0.9248291571753986,0.0,0.9248291571753986
+B,Universidade Federal de Minas Gerais,2025,2902562910.49,0.4618585298196949,2,outlier_multivariado(score=0.92),,0.9237170596393898,0.0,0.9237170596393898
+A,APOIO AO FUNCIONAMENTO DAS INSTITUICOES FEDERAIS DE EDUCACAO SUPERIOR,2022,18506336.573606167,0.46153846153846156,2,outlier_multivariado(score=0.92),,0.9230769230769231,0.0,0.9230769230769231
+B,"Instituto Federal de Educação, Ciência e Tecnologia de Minas Gerais",2016,473008334.9232091,0.46070615034168566,2,outlier_multivariado(score=0.92),,0.9214123006833713,0.0,0.9214123006833713
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Espírito Santo",2017,906164719.3307806,0.45956719817767655,2,outlier_multivariado(score=0.92),,0.9191343963553531,0.0,0.9191343963553531
+A,ATIVOS CIVIS DA UNIAO,2018,30160015973.785927,0.45940170940170943,2,outlier_multivariado(score=0.92),,0.9188034188034189,0.0,0.9188034188034189
+A,ATIVOS CIVIS DA UNIAO,2019,30272267705.635883,0.4594017094017094,2,outlier_multivariado(score=0.92),,0.9188034188034188,0.0,0.9188034188034188
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Ceará",2025,1045922028.61,0.45785876993166286,2,outlier_multivariado(score=0.92),,0.9157175398633257,0.0,0.9157175398633257
+B,Universidade Federal Fluminense,2017,3333930734.8760934,0.4573509015256588,2,outlier_multivariado(score=0.91),,0.9147018030513177,0.0,0.9147018030513177
+B,Fundação Universidade Federal da Grande Dourados,2016,365929204.12423706,0.4573509015256588,2,outlier_multivariado(score=0.91),,0.9147018030513177,0.0,0.9147018030513177
+A,ATIVOS CIVIS DA UNIAO,2022,25903216487.6179,0.4572649572649573,2,outlier_multivariado(score=0.91),,0.9145299145299146,0.0,0.9145299145299146
+A,ATIVOS CIVIS DA UNIAO,2023,25744429261.90646,0.4572649572649573,2,outlier_multivariado(score=0.91),,0.9145299145299146,0.0,0.9145299145299146
+A,ATIVOS CIVIS DA UNIAO,2024,25613456114.62273,0.45726495726495725,2,outlier_multivariado(score=0.91),,0.9145299145299145,0.0,0.9145299145299145
+B,Universidade Federal de Minas Gerais,2016,3384861139.1631613,0.4566574202496533,2,outlier_multivariado(score=0.91),,0.9133148404993066,0.0,0.9133148404993066
+B,Universidade Federal do Sul da Bahia,2016,108175134.4463576,0.4563106796116505,2,outlier_multivariado(score=0.91),,0.912621359223301,0.0,0.912621359223301
+B,Universidade Federal do Sul da Bahia,2018,147649816.31659886,0.4563106796116505,2,outlier_multivariado(score=0.91),,0.912621359223301,0.0,0.912621359223301
+B,Universidade Federal do Rio Grande do Sul,2016,2562576811.626036,0.4552704576976422,2,outlier_multivariado(score=0.91),,0.9105409153952844,0.0,0.9105409153952844
+B,Universidade Federal Fluminense,2016,3039937331.166514,0.4549237170596394,2,outlier_multivariado(score=0.91),,0.9098474341192788,0.0,0.9098474341192788
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Espírito Santo",2016,842248861.4315469,0.453872437357631,2,outlier_multivariado(score=0.91),,0.907744874715262,0.0,0.907744874715262
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Maranhão",2023,797259345.7140946,0.4533029612756264,2,outlier_multivariado(score=0.91),,0.9066059225512528,0.0,0.9066059225512528
+B,"Instituto Federal de Educação, Ciência e Tecnologia de Sergipe",2021,317355484.49615675,0.4527334851936219,2,outlier_multivariado(score=0.91),,0.9054669703872438,0.0,0.9054669703872438
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Acre",2025,179356518.1,0.4527334851936219,2,outlier_multivariado(score=0.91),,0.9054669703872438,0.0,0.9054669703872438
+B,Universidade Federal de Rondonópolis,2025,129307703.83,0.4511095700416089,2,outlier_multivariado(score=0.90),,0.9022191400832178,0.0,0.9022191400832178
+B,Fundação Universidade Federal do Mato Grosso,2017,1557752968.8719025,0.4507628294036061,2,outlier_multivariado(score=0.90),,0.9015256588072122,0.0,0.9015256588072122
+B,"Instituto Federal de Educação, Ciência e Tecnologia de Rondônia",2020,271589895.4474599,0.45045558086560367,2,outlier_multivariado(score=0.90),,0.9009111617312073,0.0,0.9009111617312073
+B,Fundação Universidade de Brasília,2014,3096424817.294367,0.275,2,tendencia_robusta(desvio=3.0),3.01397140533321,,0.0,
+B,Empresa Brasileira de Serviços Hospitalares,2014,1032402728.1566278,0.2625,2,tendencia_robusta(desvio=-3.0),-2.951835684109946,,0.0,
+A,IMPLANTACAO DA UNIVERSIDADE FEDERAL DA INTEGRACAO LATINO-AMERICANA - UNILA,2019,0.0,1.0,1,zscore_robusto,,,1.0,
+A,CONCESSAO DE BOLSAS DE RESIDENCIA EM SAUDE,2020,0.0,1.0,1,zscore_robusto,,,1.0,
+A,IMPLANTACAO DA UNIVERSIDADE FEDERAL DA INTEGRACAO LATINO-AMERICANA - UNILA,2020,0.0,1.0,1,zscore_robusto,,,1.0,
+A,REGULACAO E SUPERVISAO DOS CURSOS DE GRADUACAO E DE INSTITUICOES PUBLICAS E PRIVADAS DE ENSINO SUPERIOR,2020,0.0,1.0,1,zscore_robusto,,,1.0,
+A,CONCESSAO DE BOLSAS DE RESIDENCIA EM SAUDE,2021,0.0,1.0,1,zscore_robusto,,,1.0,
+A,CONCESSAO DE BOLSAS DE RESIDENCIA EM SAUDE,2024,0.0,1.0,1,zscore_robusto,,,1.0,
+A,CONCESSAO DE BOLSAS NO AMBITO DO PROGRAMA DE ESTIMULO A REESTRUTURACAO E AO FORTALECIMENTO DAS INSTITUICOES DE ENSINO SUPERIOR (PROIES),2024,0.0,1.0,1,zscore_robusto,,,1.0,
+A,REGULACAO E SUPERVISAO DOS CURSOS DE GRADUACAO E DE INSTITUICOES PUBLICAS E PRIVADAS DE ENSINO SUPERIOR,2024,0.0,1.0,1,zscore_robusto,,,1.0,
+A,CONCESSAO DE BOLSAS DE RESIDENCIA EM SAUDE,2025,0.0,1.0,1,zscore_robusto,,,1.0,
+A,CONCESSAO DE BOLSAS NO AMBITO DO PROGRAMA DE ESTIMULO A REESTRUTURACAO E AO FORTALECIMENTO DAS INSTITUICOES DE ENSINO SUPERIOR (PROIES),2025,0.0,1.0,1,zscore_robusto,,,1.0,
+B,Universidade Federal do Rio de Janeiro,2014,5770440312.012686,1.0,1,atipico_entre_pares,,,1.0,
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Ceará",2014,667487462.1572963,1.0,1,zscore_robusto,,,1.0,
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Mato Grosso",2014,430831832.6650717,1.0,1,zscore_robusto,,,1.0,
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Mato Grosso do Sul",2014,135859083.51582855,1.0,1,zscore_robusto,,,1.0,
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Sul",2014,429827021.47835916,1.0,1,zscore_robusto,,,1.0,
+B,"Instituto Federal de Educação, Ciência e Tecnologia do Piauí",2014,406220964.0903184,1.0,1,zscore_robusto,,,1.0,
+B,Instituto Federal do Paraná,2014,327093571.12065893,1.0,1,zscore_robusto,,,1.0,
+B,"Instituto Federal de Educação, Ciência e Tecnologia de São Paulo",2014,757738543.7353404,1.0,1,zscore_robusto,,,1.0,
+B,Universidade Federal de Catalão,2020,47675215.24110916,1.0,1,zscore_robusto,,,1.0,
+B,Universidade Federal de Jataí,2020,57280022.7715931,1.0,1,zscore_robusto,,,1.0,
+B,Universidade Federal de Rondonópolis,2020,34040570.91308685,1.0,1,zscore_robusto,,,1.0,

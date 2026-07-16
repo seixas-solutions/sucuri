@@ -84,50 +84,63 @@ Convenções para todas as tarefas:
 
 ## Fase 2 — Detecção estatística de anomalias (dados atuais)
 
-- [ ] **2.1 Análise exploratória com foco em anomalias**
-  Notebook/script `analises/02_eda.py` → `relatorios/02_eda.md` + figuras:
-  evolução do total real por ano (A e B); top 10 programas/ações por valor;
-  distribuição de `taxa_liquidacao`/`taxa_pagamento` por tipo de instituição;
-  ranking de instituições por `pago_real` per capita quando houver dados de
-  matrículas (senão, absoluto); tabela das linhas já flageadas com leitura
-  crítica (quais parecem artefato de dados vs. candidatas reais).
-  *Aceite:* relatório em markdown com figuras salvas e uma seção
-  "candidatas a investigação" com no máximo 20 linhas justificadas.
+- [x] **2.1 Análise exploratória com foco em anomalias** — concluída em
+  2026-07-16. `analises/02_eda.py` → `relatorios/02_eda.md` + 4 figuras.
+  Achados: trajetória em U (piso 2021, novo máximo 2025); as 2 maiores
+  ações do Conjunto A são a mesma ação genérica de folha de pagamento sob
+  2 programas (achado estrutural novo); ranking de instituições sem per
+  capita (dado de matrícula ainda não disponível — tarefa 4.1).
+  *Aceite:* ✅ relatório com figuras + seção de 20 candidatas justificadas.
+  Detalhes em `relatorios/RELATORIO.md`, seção III.1.
+  *Desvio:* ranking do item 4 ficou em valor absoluto (per capita
+  depende da tarefa 4.1/Censo INEP, ainda não coletado — sinalizado
+  explicitamente no relatório, não simplesmente omitido).
 
-- [ ] **2.2 Lei de Benford (primeiro e segundo dígitos)**
-  `analises/03_benford.py`: aplicar Benford sobre `empenhado` e `pago`
-  (valores > R$ 1.000) no Conjunto A completo e, no B, por tipo de
-  instituição. Estatísticas qui-quadrado e MAD (classificação de Nigrini);
-  gráfico observado × esperado.
-  *Aceite:* relatório `relatorios/03_benford.md` indicando conformidade por
-  grupo, com a ressalva de que amostras pequenas (<300 valores) são
-  inconclusivas — marcar esses grupos como "amostra insuficiente".
+- [x] **2.2 Lei de Benford** — concluída em 2026-07-16.
+  `analises/03_benford.py` → `relatorios/03_benford.md` + 3 figuras.
+  Achado principal: o Conjunto A (225–254 valores/grupo) é insuficiente
+  para o teste, mesmo sendo "o conjunto completo" — abaixo do limiar de
+  300. Conjunto B, grupos bem-dimensionados (Universidade Federal n=791,
+  Instituto/CEFET n=480): não conformidade explicada estruturalmente
+  (totais institucionais concentrados numa faixa estreita de magnitude).
+  *Aceite:* ✅ relatório com classificação por grupo e amostras pequenas
+  marcadas como inconclusivas. Detalhes em `relatorios/RELATORIO.md`,
+  seção III.2.
 
-- [ ] **2.3 Modelos não supervisionados**
-  `analises/04_outliers.py`: Isolation Forest e LOF sobre features
-  padronizadas `[pago_real, taxa_liquidacao, taxa_pagamento,
-  variacao_pago_aa, restos_a_pagar/empenhado]`, separadamente para A (por
-  linha ano×ação) e B (por linha ano×órgão, dentro de cada
-  `tipo_instituicao`). Comparar interseção dos dois métodos e com as
-  `flag_*` existentes (matriz de concordância).
-  *Aceite:* coluna `score_anomalia` e `rank_anomalia` salvas em
-  `dados/*_scores.parquet`; relatório com top 20 por conjunto e concordância
-  entre métodos.
+- [x] **2.3 Modelos não supervisionados** — concluída em 2026-07-16.
+  `analises/04_outliers.py` → `dados/*_scores.parquet` +
+  `relatorios/04_outliers.md`. Isolation Forest + LOF sobre as 5 features
+  do ROADMAP, B por `tipo_instituicao` (grupos <20 linhas pulados).
+  *Aceite:* ✅ `score_anomalia`/`rank_anomalia` salvos; top 20 por
+  conjunto; concordância IF×LOF (Jaccard 0,60 A / 0,39 B) e com
+  `flag_anomalia`. Detalhes e bug corrigido (ranks locais não
+  globalizados ao concatenar grupos de B) em `relatorios/RELATORIO.md`,
+  seção III.3.
 
-- [ ] **2.4 Séries temporais por instituição**
-  `analises/05_series.py`: para cada órgão do Conjunto B com ≥8 anos, ajustar
-  tendência robusta (ex.: regressão de Theil–Sen ou STL anual simples) sobre
-  `pago_real` e sinalizar resíduos > 2,5 desvios robustos. Comparar com
-  `flag_salto_anual`.
-  *Aceite:* lista de eventos (órgão, ano, desvio) em
-  `dados/eventos_series.csv` com no máximo ~50 eventos, ordenada por desvio.
+- [x] **2.4 Séries temporais por instituição** — concluída em 2026-07-16.
+  `analises/05_series.py` → `dados/eventos_series.csv` (40 eventos) +
+  `relatorios/05_series.md`. Theil–Sen sobre `pago_real`, ≥8 anos, 111
+  instituições elegíveis.
+  *Aceite:* ✅ eventos ordenados por desvio, comparados com
+  `flag_salto_anual` (sobreposição de só 2% — achado de complementaridade
+  entre os dois critérios). Detalhes e bug corrigido (MAD=0 descartava o
+  outlier mais óbvio) em `relatorios/RELATORIO.md`, seção III.4.
 
-- [ ] **2.5 Consolidação e priorização de casos**
-  `analises/06_casos.py`: unificar sinais de 2.1–2.4 em uma tabela de casos
-  (`dados/casos_priorizados.csv`): entidade, ano, sinais que dispararam,
-  valores envolvidos, score combinado (média dos ranks normalizados).
-  *Aceite:* top 15 casos com justificativa textual de 1–2 frases cada em
-  `relatorios/06_casos.md`; nenhuma referência a caso baseada em ano parcial.
+- [x] **2.5 Consolidação e priorização de casos** — concluída em
+  2026-07-16. `analises/06_casos.py` → `dados/casos_priorizados.csv`
+  (176 casos) + `relatorios/06_casos.md`.
+  *Aceite:* ✅ top 15 com justificativa textual; nenhum caso de ano
+  parcial (excluído explicitamente antes de qualquer processamento).
+  *Desvios:* (1) critério de "caso candidato" trocado de `score>0`
+  (deixava passar 1.363 linhas, quase tudo) para disparo discreto de
+  sinal (flag=True, top 10% de outlier, ou presença em eventos_series) —
+  resultado caiu para 176; (2) ordenação trocada de só `score_combinado`
+  para (nº de sinais concordantes, score) — um único sinal binário não
+  deve empatar/superar 2-3 sinais triangulados. Achado de síntese: 2025
+  concentra 20% dos casos (35/176) e quase metade da camada de maior
+  confiança (16/33) — provavelmente reflexo da recuperação orçamentária
+  macro pós-2021 (tarefa 2.1), não eventos independentes. Detalhes em
+  `relatorios/RELATORIO.md`, seção III.5.
 
 ## Fase 3 — Enriquecimento com outros dados do Portal da Transparência
 

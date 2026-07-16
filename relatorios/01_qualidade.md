@@ -1,6 +1,6 @@
 # Relatório de qualidade dos dados — tarefa 1.1
 
-Gerado por `analises/01_qualidade.py` em 2026-07-16 19:53.
+Gerado por `analises/01_qualidade.py` em 2026-07-16 20:34.
 Escopo: Conjunto A (`despesas_ensino_superior`) e Conjunto B
 (`despesas_por_instituicao`), tal como salvos por `coletar_despesas.py`
 (sem deflação nem tratamento de ano parcial — isso é feito nas tarefas 1.2

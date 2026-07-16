@@ -311,9 +311,208 @@ excluindo ano parcial (2026) e séries curtas da base estatística.
 Tarefas 1.1, 1.2 e 1.3 marcadas como concluídas em `ROADMAP.md`, com os
 desvios de escopo (deduplicação do Conjunto A, uso de `pago_real` nas
 métricas de série temporal) documentados tanto lá quanto nesta seção.
-Próxima tarefa pendente: **2.1 Análise exploratória com foco em anomalias**
-(`analises/02_eda.py` → `relatorios/02_eda.md`), que deve partir de
-`dados/*_v2.{csv,parquet}`.
+
+---
+
+# Parte III — Fase 2: Detecção estatística de anomalias
+
+**Data:** 2026-07-16
+**Responsável pela execução:** modelo de linguagem (Sonnet 5), seguindo CLAUDE.md e ROADMAP.md
+
+Cobre as tarefas 2.1 a 2.5. Toda a fase parte de `dados/*_v2.{csv,parquet}`
+(saída da Fase 1). Cada tarefa tem relatório próprio detalhado
+(`relatorios/02_eda.md` a `relatorios/06_casos.md`); esta parte resume
+método, resultado e interpretação de cada uma, com foco nos achados que
+persistem para além do relatório individual.
+
+## III.1 Tarefa 2.1 — Análise exploratória com foco em anomalias
+
+**Método:** `analises/02_eda.py` produz 4 figuras e 6 seções em
+`relatorios/02_eda.md`: evolução anual, top 10 ações do Conjunto A,
+distribuição de taxas por tipo de instituição (B), ranking de
+instituições, linhas já flageadas e uma lista de 20 candidatas a
+investigação.
+
+**Resultados e interpretação:**
+
+- **Trajetória em U, não em queda:** ambos os conjuntos caem de 2017/2018
+  até um piso em **2021** (Conjunto B: R$ 195,1 bi → R$ 153,3 bi, -21,4%
+  real) e se recuperam até **2025, novo máximo da série** (R$ 204,7 bi).
+  Esse padrão de recuperação pós-2021 volta a aparecer, de forma
+  independente, na tarefa 2.5 (concentração de casos em 2025).
+- **Achado estrutural sobre o próprio Conjunto A:** as duas maiores ações
+  em valor acumulado (juntas ~R$ 343 bi, mais que as outras 8 do top 10
+  somadas) são a mesma ação genérica de **folha de pagamento** ("Ativos
+  Civis da União") sob dois programas diferentes — a subfunção "Ensino
+  Superior" no Conjunto A é majoritariamente pessoal, não bolsas ou
+  custeio. Qualquer variação nessa linha deve ser lida à luz de reajuste
+  salarial, não evento pontual.
+- **Ressalva reforçada:** o 1º colocado do ranking de instituições (FNDE,
+  R$ 89,78 bi em 2025 — 7,5× o 2º colocado) não é "a maior despesa de
+  ensino superior" — o FNDE administra programas de educação básica além
+  de FIES, e o Conjunto B soma todas as funções do órgão. Reforça a
+  ressalva já registrada em `CLAUDE.md`.
+- Vários outliers na cauda baixa de `taxa_pagamento` (mínimo 0,098 em
+  Universidade Federal) ficam como candidatos não investigados
+  individualmente nesta tarefa — insumo para 2.3.
+
+## III.2 Tarefa 2.2 — Lei de Benford
+
+**Método:** `analises/03_benford.py` aplica o teste de primeiro/segundo
+dígito (qui-quadrado + MAD de Nigrini) sobre `empenhado`/`pago` nominais
+(não deflacionados — deflação aplica um fator diferente por ano, o que
+alteraria dígitos por um motivo alheio ao fenômeno testado), no Conjunto A
+completo e no Conjunto B por `tipo_instituicao`.
+
+**Resultados e interpretação:**
+
+- **Achado principal: o Conjunto A é insuficiente para o teste.** Depois
+  do filtro > R$ 1.000, sobram só 225–254 valores por grupo — abaixo do
+  limiar de 300 adotado. O primeiro dígito parece conforme mas o segundo
+  não, no mesmo par de colunas — inconsistência típica de amostra
+  subdimensionada, não conformidade real. Conclusão registrada: o painel
+  agregado (uma linha por ano×programa×ação) não tem volume para Benford
+  ser informativo; só lançamentos individuais (tarefa 3.1) teriam.
+- **Conjunto B, grupos bem-dimensionados (`Universidade Federal`, n=791;
+  `Instituto/CEFET/Escola Técnica`, n=480): não conformidade em ambos**,
+  com o mesmo padrão — excesso do dígito 1 (39,1% vs. 30,1% esperado) e
+  déficit dos dígitos 3–4. Explicação estrutural, não fraude: cada linha é
+  o orçamento total anual de instituições do mesmo tipo, uma grandeza
+  concentrada numa faixa de magnitude estreita — Benford pressupõe várias
+  ordens de grandeza, condição que totais institucionais homogêneos violam
+  por construção.
+- Os demais 10 de 14 grupos do Conjunto B (CAPES, Fundo, Educação Básica,
+  Hospitalar) têm amostra insuficiente (<300) e ficam explicitamente
+  marcados como inconclusivos, mesmo quando o qui-quadrado é
+  "significativo" — significância não substitui tamanho de amostra na
+  classificação adotada.
+
+## III.3 Tarefa 2.3 — Modelos não supervisionados (Isolation Forest + LOF)
+
+**Método:** `analises/04_outliers.py` roda os dois modelos sobre 5
+features padronizadas (`pago_real`, `taxa_liquidacao`, `taxa_pagamento`,
+`variacao_pago_aa`, `restos_a_pagar_frac`) — Conjunto A como um único
+grupo, Conjunto B por `tipo_instituicao` (grupos com <20 linhas elegíveis
+pulados: CAPES, Educação Básica, Fundo). Gera `dados/*_scores.parquet`
+com `score_anomalia`/`rank_anomalia`.
+
+**Bug real encontrado e corrigido durante a implementação:** ao processar
+o Conjunto B por grupo, cada grupo produzia ranks locais (1..n do próprio
+grupo) — concatenar sem recalcular gerava várias linhas empatadas em
+`rank_anomalia=1` (uma por grupo) e quebrava tanto a seleção de "top 20"
+quanto a matriz de concordância. Corrigido com
+`sucuri.outliers.recalcular_ranks_globais`, que reconstrói ranks globais a
+partir dos scores normalizados por método — coberto por teste de
+regressão (`tests/test_outliers.py`).
+
+**Resultados e interpretação:**
+
+- Concordância entre os dois métodos (top 10% de cada): Jaccard 0,60 no
+  Conjunto A, 0,39 no B — concordância parcial esperada (isolamento global
+  vs. densidade local capturam desvios diferentes).
+- Concordância com `flag_anomalia` (Fase 1): sobreposição parcial em
+  ambos os conjuntos — os modelos multivariados usam informação (nível de
+  gasto, taxas) que as flags de série temporal isoladas não capturam.
+- Dois padrões no top 20 do Conjunto B já têm explicação: as universidades
+  da expansão 2013–2014 (mesmo efeito de rampa da tarefa 2.1) e a UFRJ,
+  que aparece 4 vezes — possivelmente dominância de escala dentro do grupo
+  `Universidade Federal` (791 linhas sem subdivisão por porte), não
+  comportamento atípico.
+
+## III.4 Tarefa 2.4 — Séries temporais por instituição (Theil–Sen)
+
+**Método:** `analises/05_series.py` ajusta uma tendência robusta de
+Theil–Sen por instituição (Conjunto B, ≥8 anos elegíveis, 111
+instituições) sobre `pago_real`, e sinaliza resíduos > 2,5 desvios
+robustos (MAD × 1,4826). Gera `dados/eventos_series.csv` (40 eventos).
+
+**Bug real encontrado e corrigido:** quando a maioria dos pontos de uma
+série segue a tendência de Theil–Sen exatamente, o MAD dos resíduos pode
+ser zero — o código original pulava a série inteira nesse caso (`continue`
+antes de qualquer verificação), descartando exatamente o caso mais óbvio
+de outlier (um ponto isolado destoando de uma tendência perfeita nos
+demais). Corrigido para tratar desvio-robusto-zero como "qualquer resíduo
+diferente do valor dominante é, por definição, extremo" — coberto por
+teste de regressão. Uma segunda iteração do fix corrigiu a comparação
+(contra a mediana dos resíduos, não contra zero — o intercepto de
+Theil-Sen não necessariamente zera o resíduo "normal").
+
+**Resultados e interpretação:**
+
+- Sobreposição com `flag_salto_anual` (Fase 1): **apenas 1 dos 40 eventos
+  (2%)** também está marcado como salto anual — achado a registrar, não
+  defeito. `flag_salto_anual` compara só com o ano anterior (sensível a
+  mudanças abruptas de 1 ano); o resíduo de Theil–Sen compara com a
+  tendência de toda a série (sensível a platôs de vários anos que nenhum
+  ano individual sinalizaria). Os dois critérios são complementares, quase
+  sem redundância.
+- 4 das instituições no topo (Cariri, Oeste da Bahia, Sul da Bahia, Sul e
+  Sudeste do Pará, evento em 2014) são o mesmo padrão de universidades
+  novas já visto em 2.1/2.3 — já têm 12 anos de histórico hoje, passam no
+  critério de ≥8 anos, mas o ano de implantação continua sendo um resíduo
+  extremo em relação à própria tendência madura.
+- **Achados sem explicação estrutural** (candidatos reais a checagem
+  manual): Universidade Federal Rural do Rio de Janeiro (queda sustentada
+  2019→2021, recuperação parcial) e Fundação Universidade Federal do Vale
+  do São Francisco (queda até 2021, salto acentuado em 2024–2025) — únicas
+  instituições consolidadas (não recém-criadas) com padrão de oscilação
+  não explicado nesta fase.
+
+## III.5 Tarefa 2.5 — Consolidação e priorização de casos
+
+**Método:** `analises/06_casos.py` unifica `flag_anomalia` (Fase 1),
+`score_anomalia` (2.3) e o desvio de Theil–Sen (2.4, só Conjunto B) por
+`(conjunto, entidade, ano)`. A Lei de Benford (2.2) não entra — é teste de
+conformidade do grupo, não produz sinal por entidade. Um caso só entra na
+lista se algum sinal **disparou de fato** (`flag_anomalia=True`, ou
+`score_anomalia` no top 10% do seu grupo, ou presença em
+`eventos_series.csv`) — não basta `score_anomalia` ser positivo, que é
+quase sempre verdade por ser um rank contínuo. Gera
+`dados/casos_priorizados.csv`.
+
+**Dois bugs reais encontrados e corrigidos durante a implementação:**
+1. O filtro inicial (`score_combinado > 0`) deixava passar 1.363 das
+   ~2.467 linhas elegíveis — quase tudo — porque `score_anomalia` (2.3) é
+   um rank contínuo quase sempre positivo. Substituído pelo critério de
+   disparo discreto acima; resultado caiu para 176 casos candidatos.
+2. A ordenação por `score_combinado` sozinho enterrava casos com múltiplos
+   sinais concordantes atrás de casos com um único sinal binário
+   (`flag_anomalia=1.0` sozinho já soma média 1,00, empatando com casos de
+   2-3 sinais). Corrigido para ordenar primeiro por número de sinais
+   concordantes, depois por score — exatamente o que o texto do relatório
+   já afirmava ser a prioridade (triangulação de métodos independentes).
+
+**Resultados e interpretação:**
+
+- 176 casos candidatos (29 no Conjunto A, 147 no B); 33 têm o número
+  máximo de sinais concordantes (maior confiança).
+- **Achado de síntese, não visível em nenhuma tarefa isolada:** 2025
+  responde por 35 dos 176 casos (20%, vs. ~8% esperado por distribuição
+  uniforme) e por 16 dos 33 casos de maior confiança (quase metade). Isso
+  bate com o achado da tarefa 2.1 de que 2025 é o novo máximo real da
+  série — leitura recomendada: boa parte dos casos de 2025 provavelmente
+  não são eventos independentes, e sim a mesma recuperação orçamentária
+  macro (pós-2021) se manifestando instituição por instituição, já que
+  cada modelo de tendência olha só a própria série. Isso não invalida os
+  casos, mas muda a pergunta de investigação de "por que este salto" para
+  "esta instituição cresceu mais que a média do setor, e por quê".
+- Casos com nota de "padrão já identificado" (universidades novas, folha
+  de pagamento, dominância de escala) aparecem na lista mas devem ser
+  priorizados por último — a distinção entre "estatisticamente extremo" e
+  "já explicado" só existe porque as tarefas 2.1–2.4 investigaram cada
+  padrão recorrente manualmente; o score combinado sozinho não sabe fazer
+  essa distinção.
+
+## III.6 Estado do ROADMAP após a Fase 2
+
+Tarefas 2.1 a 2.5 marcadas como concluídas em `ROADMAP.md`. Três bugs reais
+foram encontrados e corrigidos durante a própria implementação desta fase
+(ranks locais não recalculados globalmente em 2.3; MAD-zero descartando o
+outlier mais óbvio em 2.4; filtro de "caso candidato" deixando passar
+quase tudo em 2.5) — todos cobertos por testes de regressão em
+`tests/`. Próxima tarefa pendente: **Fase 3 — Enriquecimento com outros
+dados do Portal da Transparência** (contratos, licitações, sanções,
+convênios, CPGF, emendas), que depende de novos coletores (ver ROADMAP.md).
 
 ---
 

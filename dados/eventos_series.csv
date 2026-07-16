@@ -1,0 +1,41 @@
+chave_serie,ano,pago_real,residuo,desvio_padronizado,n_anos_serie,orgao,tipo_instituicao
+26449,2014,6960852.325296214,-99665233.29348202,-7.933442394738038,12,Universidade Federal do Cariri,Universidade Federal
+26230,2025,352500610.15,83519300.36694181,7.81579744773657,12,Fundação Universidade Federal do Vale do São Francisco,Universidade Federal
+26447,2014,2307183.2217351496,-102454810.62302956,-5.949600799518198,12,Universidade Federal do Oeste da Bahia,Universidade Federal
+26249,2021,736752344.6119688,-106918356.03965402,-4.211055945559876,12,Universidade Federal Rural do Rio de Janeiro,Universidade Federal
+26412,2025,428389367.79,83401675.25614339,4.158783212558221,12,"Instituto Federal de Educação, Ciência e Tecnologia do Sul de Minas Gerais",Instituto/CEFET/Escola Técnica
+26230,2024,315841700.6170734,44394597.67144334,4.154479044356295,12,Fundação Universidade Federal do Vale do São Francisco,Universidade Federal
+26450,2014,445823.5625870033,-83284904.41741063,-3.999001629916416,12,Universidade Federal do Sul da Bahia,Universidade Federal
+26275,2025,496208775.45,66832528.48836726,3.961573675698114,12,Fundação Universidade Federal do Acre,Universidade Federal
+26440,2025,391852537.76,54361930.85416913,3.8415654967789505,12,Universidade Federal da Fronteira Sul,Universidade Federal
+26249,2022,736394856.9222357,-95893391.5853517,-3.77682983290194,12,Universidade Federal Rural do Rio de Janeiro,Universidade Federal
+26447,2015,49267297.400547475,-60653418.380860835,-3.522173573869915,12,Universidade Federal do Oeste da Bahia,Universidade Federal
+26272,2025,1202294694.77,158173149.50073576,3.300156751080857,12,Fundação Universidade do Maranhão,Universidade Federal
+26277,2025,590261678.14,62854879.75544417,3.263257315474505,12,Universidade Federal de Ouro Preto,Universidade Federal
+26230,2021,244901971.91538137,-33942510.51796633,-3.176365054670619,12,Fundação Universidade Federal do Vale do São Francisco,Universidade Federal
+26294,2017,2114573886.8139374,214688832.10767484,3.1428498952741406,12,Hospital de Clínicas de Porto Alegre,Hospitalar (EBSERH)
+26277,2021,502740597.89243144,-60206540.181562245,-3.125762605088359,12,Universidade Federal de Ouro Preto,Universidade Federal
+26291,2015,12510262289.597286,5321156973.95422,3.1084456243146237,12,Fundação Coordenação de Aperfeiçoamento de Pessoal de Nível Superior,CAPES
+26000,2025,1617243930.71,493982551.42618656,3.0407240829040054,12,Ministério da Educação - Unidades com vínculo direto,Outros / Administração
+26271,2014,3096424817.294367,347411368.68816566,3.01397140533321,12,Fundação Universidade de Brasília,Universidade Federal
+26443,2014,1032402728.1566278,-2014460482.3697395,-2.951835684109946,12,Empresa Brasileira de Serviços Hospitalares,Hospitalar (EBSERH)
+26435,2025,941690106.26,165086183.96934676,2.9188033605440182,12,"Instituto Federal de Educação, Ciência e Tecnologia do Rio Grande do Norte",Instituto/CEFET/Escola Técnica
+26275,2021,385230790.2516409,-49021801.66373813,-2.9058227093736497,12,Fundação Universidade Federal do Acre,Universidade Federal
+26267,2025,288817710.8,76543449.37633687,2.897595188933251,12,Universidade Federal da Integração Latino-Americana,Universidade Federal
+26252,2017,1119457567.5435941,103590632.73039222,2.8832354108174756,12,Universidade Federal de Campina Grande,Universidade Federal
+26271,2025,2399441685.8,326017157.93230915,2.828365678896255,12,Fundação Universidade de Brasília,Universidade Federal
+26252,2025,955484792.86,101321772.98461854,2.820086295991442,12,Universidade Federal de Campina Grande,Universidade Federal
+26260,2021,272886618.5129955,-23035283.951515436,-2.805176629773416,12,Universidade Federal de Alfenas,Universidade Federal
+26285,2021,378048896.3020248,-32797742.644912064,-2.795151094081471,12,Fundação Universidade Federal de São João Del-Rei,Universidade Federal
+26277,2022,501272074.8574392,-52789978.294195,-2.740714539945504,12,Universidade Federal de Ouro Preto,Universidade Federal
+26260,2022,272991173.3682331,-22484099.038163543,-2.7380547726748543,12,Universidade Federal de Alfenas,Universidade Federal
+26448,2014,68711295.53606051,-58959252.93764287,-2.7282421479932526,12,Universidade Federal do Sul e Sudeste do Pará,Universidade Federal
+26243,2017,2569024838.5302973,186747698.1496668,2.7221005675291434,12,Universidade Federal do Rio Grande do Norte,Universidade Federal
+26281,2025,1060044002.38,99592251.58168304,2.6834189432801394,12,Fundação Universidade Federal de Sergipe,Universidade Federal
+26292,2017,193145642.79139265,17786377.592223495,2.648397871294165,12,Fundação Joaquim Nabuco,Outros / Administração
+26243,2025,2176818119.24,179286448.496027,2.6133427508712264,12,Universidade Federal do Rio Grande do Norte,Universidade Federal
+26292,2025,144509057.83,17496461.16769609,2.6052292138432347,12,Fundação Joaquim Nabuco,Outros / Administração
+26278,2022,922297532.5788934,-96525598.77660584,-2.590932755378936,12,Fundação Universidade Federal de Pelotas,Universidade Federal
+26285,2025,444077771.97,30023592.294801712,2.558727219724973,12,Fundação Universidade Federal de São João Del-Rei,Universidade Federal
+26422,2017,502463843.2557981,72810353.2023294,2.5509313646934215,12,"Instituto Federal de Educação, Ciência e Tecnologia Catarinense",Instituto/CEFET/Escola Técnica
+26260,2025,314780639.0,20645256.7679466,2.514125370584167,12,Universidade Federal de Alfenas,Universidade Federal
