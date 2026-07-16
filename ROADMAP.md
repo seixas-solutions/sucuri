@@ -41,33 +41,46 @@ Convenções para todas as tarefas:
 
 ## Fase 1 — Qualidade e preparação dos dados existentes
 
-- [ ] **1.1 Relatório de qualidade dos dados**
-  Script `analises/01_qualidade.py` que gera `relatorios/01_qualidade.md` com:
-  contagem de linhas/séries por ano; % de zeros por coluna monetária;
-  séries do Conjunto A com menos de 5 anos de dados (listar); duplicatas;
-  linhas com `flag_pago_maior_empenhado`/`flag_valor_negativo` (tabela);
-  verificação de que o total do Conjunto A por ano bate ordem de grandeza com
-  o somatório público esperado (comparação apenas descritiva).
-  *Aceite:* relatório gerado com todas as seções; anomalias de qualidade
-  (não estatísticas) listadas explicitamente.
+- [x] **1.1 Relatório de qualidade dos dados** — concluída em 2026-07-16.
+  `analises/01_qualidade.py` → `relatorios/01_qualidade.md`. Achado
+  principal (não previsto no ROADMAP original): 69 linhas do Conjunto A
+  duplicadas em `(ano, chave_serie)` por grafia divergente do mesmo
+  programa/ação na fonte (acentuação/espaçamento) — em 2 dos 69 grupos os
+  valores monetários divergem entre as grafias, risco real de o valor
+  "sumir" em um ano e "reaparecer" no seguinte, imitando um salto de
+  anomalia. Tratado na tarefa 1.3 (deduplicação por soma).
+  *Aceite:* ✅ relatório com as 6 seções pedidas; duplicatas documentadas com
+  causa-raiz. Detalhes em `relatorios/RELATORIO.md`, seção II.1.
 
-- [ ] **1.2 Deflacionamento pelo IPCA**
-  Obter série anual do IPCA (ver EXTERNAL.md, item E1 — se o arquivo
-  `dados/externos/ipca_anual.csv` não existir, PARAR e sinalizar).
-  Criar `src/sucuri/deflacao.py` com função que adiciona colunas
-  `empenhado_real`, `liquidado_real`, `pago_real` (base = último ano completo)
-  e regravar os dois conjuntos como `dados/*_real.{csv,parquet}`.
-  *Aceite:* valores de 2014 corrigidos ficam maiores que os nominais; testes
-  com fator de deflação conhecido.
+- [x] **1.2 Deflacionamento pelo IPCA** — concluída em 2026-07-16.
+  IPCA obtido via automação (EXTERNAL.md, E1): `analises/00_baixar_ipca.py`
+  baixa a série mensal do Banco Central (SGS 433, pública) e calcula o
+  acumulado anual em `dados/externos/ipca_anual.csv`. `src/sucuri/deflacao.py`
+  criado; `analises/01b_deflacionar.py` gera `dados/*_real.{csv,parquet}`
+  (ano-base 2025, último ano completo).
+  *Aceite:* ✅ pago de 2014 nominal R$25,89 bi → real R$47,21 bi (fator
+  1,824×, Conjunto A); testes com fator de deflação conhecido em
+  `tests/test_deflacao.py`. Detalhes em `relatorios/RELATORIO.md`, seção II.2.
 
-- [ ] **1.3 Tratamento do ano parcial e revisão das flags**
-  Adicionar coluna `ano_parcial` (True para o ano da coleta, detectado pelo
-  carimbo dos arquivos em `dados/raw/`). Recalcular `variacao_pago_aa`,
-  z-scores e flags EXCLUINDO anos parciais e séries com <5 observações
-  (marcar `serie_curta=True` nessas). Salvar como `dados/*_v2.{csv,parquet}`
-  e atualizar `dados/DICIONARIO.md`.
-  *Aceite:* nenhuma flag de anomalia disparada apenas por queda no ano
-  parcial; contagem de flags antes/depois documentada no cabeçalho do script.
+- [x] **1.3 Tratamento do ano parcial e revisão das flags** — concluída em
+  2026-07-16. `analises/01c_ano_parcial_e_flags.py` → `dados/*_v2.{csv,parquet}`.
+  `ano_parcial`/`serie_curta` adicionadas; z-scores/variação anual
+  recalculados com base em `pago_real` (não nominal — desvio de escopo
+  registrado abaixo) excluindo essas linhas da base estatística; Conjunto A
+  também deduplicado (achado da tarefa 1.1) antes do recálculo.
+  `dados/DICIONARIO.md` atualizado com seção sobre os conjuntos `_real`/`_v2`.
+  *Aceite:* ✅ nenhuma flag de anomalia baseada em ano parcial; `flag_anomalia`
+  41→19 (Conjunto A), 73→58 (Conjunto B), contagem completa em
+  `relatorios/RELATORIO.md`, seção II.3.
+  *Desvios registrados:* (1) z-scores/variação anual recalculados sobre
+  `pago_real` em vez de `pago` nominal — não estava explícito no ROADMAP,
+  mas é a continuação lógica da tarefa 1.2 (comparar nominal entre anos
+  distantes reintroduziria o viés que a deflação corrige); `features_serie_temporal`
+  e `zscore_entre_pares` foram generalizadas com parâmetro `coluna_valor`
+  para isso, sem quebrar o comportamento (testado) da Fase 0. (2) a
+  deduplicação do Conjunto A não estava prevista na tarefa 1.3 original —
+  foi incorporada aqui por ser pré-requisito para o recálculo de séries
+  temporais funcionar corretamente (ver achado da tarefa 1.1).
 
 ## Fase 2 — Detecção estatística de anomalias (dados atuais)
 

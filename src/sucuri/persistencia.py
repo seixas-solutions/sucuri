@@ -4,12 +4,38 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
 
 log = logging.getLogger("sucuri.persistencia")
+
+_PADRAO_CARIMBO_RAW = re.compile(r"_raw_(\d{8})\.json$")
+
+
+def detectar_ano_coleta(dir_raw: Path | str = Path("dados/raw")) -> int:
+    """Detecta o ano em que a coleta mais recente foi executada, a partir do
+    carimbo `_YYYYMMDD` nos nomes de arquivo em `dados/raw/*.json`.
+
+    Esse é o "ano parcial" da tarefa 1.3: a coleta captura o exercício
+    orçamentário corrente até a data em que rodou, então o ano do carimbo
+    tende a estar com o exercício incompleto (ver ressalva em CLAUDE.md).
+    """
+    dir_raw = Path(dir_raw)
+    carimbos = []
+    for caminho in dir_raw.glob("*_raw_*.json"):
+        m = _PADRAO_CARIMBO_RAW.search(caminho.name)
+        if m:
+            carimbos.append(m.group(1))
+    if not carimbos:
+        raise FileNotFoundError(
+            f"Nenhum arquivo '*_raw_YYYYMMDD.json' encontrado em '{dir_raw}' "
+            "para detectar o ano da coleta."
+        )
+    carimbo_mais_recente = max(carimbos)
+    return int(carimbo_mais_recente[:4])
 
 
 def salvar_dataset(df: pd.DataFrame, registros: list[dict], dir_saida: Path, nome_base: str) -> None:
@@ -102,6 +128,45 @@ estritamente a subfunção 364 — use o Conjunto A para precisão de subfunçã
   do mesmo tipo — bom para achar instituições fora do padrão em um dado ano.
 - As colunas `flag_*` servem como regras de negócio e rótulos fracos para
   validar os modelos não supervisionados.
+
+## Conjuntos derivados da Fase 1 (qualidade, deflação, ano parcial)
+
+As tabelas acima descrevem `despesas_ensino_superior.*` e
+`despesas_por_instituicao.*` — a saída original de `coletar_despesas.py`
+(tarefa 0.1). A Fase 1 do ROADMAP adiciona dois conjuntos derivados, cada
+um em cima do anterior. **Use `*_v2` para qualquer análise de anomalia — os
+dois primeiros existem apenas como estágios intermediários do pipeline.**
+
+### `*_real.{csv,parquet}` (tarefa 1.2 — `analises/01b_deflacionar.py`)
+Mesmas colunas de A/B, mais `empenhado_real`, `liquidado_real`, `pago_real`:
+valores deflacionados pelo IPCA (fonte:
+`dados/externos/ipca_anual.csv`, obtido por `analises/00_baixar_ipca.py`),
+em R$ do último ano com os 12 meses de IPCA disponíveis (ano-base). As
+colunas `taxa_*`/`zscore_*`/`flag_*` deste arquivo AINDA são as originais
+(nominais, sem dedup, sem exclusão de ano parcial) — não usar para análise
+de anomalia; servem só de estágio intermediário para a tarefa 1.3.
+
+### `*_v2.{csv,parquet}` (tarefa 1.3 — `analises/01c_ano_parcial_e_flags.py`)
+Conjunto recomendado para a Fase 2. Diferenças em relação ao `_real`:
+- **Deduplicado** (Conjunto A): linhas de `(ano, chave_serie)` duplicadas
+  por grafia divergente do mesmo programa/ação na fonte (ver
+  `relatorios/01_qualidade.md`, seção 4) foram agregadas por soma.
+- **`ano_parcial`** (bool): `True` no ano em que a coleta foi executada
+  (detectado pelo carimbo de `dados/raw/*.json` —
+  `sucuri.persistencia.detectar_ano_coleta`), tipicamente com exercício
+  orçamentário incompleto.
+- **`serie_curta`** (bool, só A): `True` para séries (`chave_serie`) com
+  menos de 5 anos distintos de observação.
+- `variacao_pago_aa`, `zscore_pago`, `zscore_robusto_pago` e (só B)
+  `zscore_pago_entre_pares` foram **recalculados com base em `pago_real`**
+  (não mais `pago` nominal) e **excluindo** da base estatística as linhas
+  com `ano_parcial=True` ou `serie_curta=True`. Essas linhas ficam com
+  `NaN` nas métricas e `False` nas flags derivadas — não são avaliadas
+  quanto a anomalia por falta de uma base de comparação confiável (mas
+  `empenhado`/`liquidado`/`pago`/`*_real` continuam preenchidos
+  normalmente).
+- `flag_anomalia` foi recalculada por `consolidar_flags` sobre o conjunto
+  final de flags acima.
 """
 
 

@@ -36,13 +36,21 @@ completa fica a cargo do usuário.
 
 ## Downloads manuais / em lote
 
-### E1. IPCA anual (pré-requisito da tarefa 1.2)
-- Fonte: SIDRA/IBGE, tabela 1737 (IPCA acumulado no ano), ou
+### E1. IPCA anual (pré-requisito da tarefa 1.2) — ✅ automatizado
+- **Automatizado** em `analises/00_baixar_ipca.py`: baixa a série mensal do
+  IPCA (Banco Central, SGS série 433 —
+  `https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json`,
+  pública, sem cadastro, sem relação com `GOVBR_API_KEY`), calcula o
+  acumulado por ano civil e salva `dados/externos/ipca_anual.csv`
+  (`ano,ipca_acumulado_pct`) + `dados/externos/ipca_anual_detalhe.csv`
+  (com `n_meses`/`ano_completo`, usado por `sucuri.deflacao` para achar o
+  último ano completo). Reexecutar quando precisar atualizar:
+  `uv run python analises/00_baixar_ipca.py`.
+- Fonte alternativa (caso a API do BCB fique indisponível): SIDRA/IBGE,
+  tabela 1737 (IPCA acumulado no ano) —
   https://www.ibge.gov.br/estatisticas/economicas/precos-e-custos/9256-indice-nacional-de-precos-ao-consumidor-amplo.html
-- Alternativa via API (sem cadastro): Banco Central SGS série 433 (mensal) —
-  `https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json`
-  (esta pode ser automatizada; se for, documentar no coletor).
-- Salvar como: `dados/externos/ipca_anual.csv` com colunas `ano,ipca_acumulado_pct`.
+  — nesse caso, montar manualmente o CSV no mesmo formato
+  (`ano,ipca_acumulado_pct`) e salvar em `dados/externos/ipca_anual.csv`.
 
 ### E2. Downloads em lote do Portal da Transparência
 Para volumes grandes (despesas detalhadas por documento, CPGF completo), o
