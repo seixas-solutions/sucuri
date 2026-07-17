@@ -8,13 +8,19 @@ import pandas as pd
 
 
 def brl_para_float(valor: str | float | None) -> float:
-    """Converte '1.059.473.395,24' -> 1059473395.24. Vazio/None -> 0.0."""
+    """Converte '1.059.473.395,24' -> 1059473395.24. Vazio/None -> 0.0.
+
+    Também trata dois formatos vistos nos endpoints da Fase 3
+    (`/despesas/documentos` e afins, não usados pelos endpoints da Fase 0):
+    valor negativo com espaço após o sinal (`'- 611,57'`) e traço solto
+    como marcador de vazio/zero (`'-'`).
+    """
     if valor is None:
         return 0.0
     if isinstance(valor, (int, float)):
         return float(valor)
-    texto = str(valor).strip()
-    if not texto:
+    texto = str(valor).strip().replace(" ", "")
+    if not texto or texto == "-":
         return 0.0
     texto = texto.replace(".", "").replace(",", ".")
     try:

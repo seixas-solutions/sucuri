@@ -33,6 +33,18 @@ class TestBrlParaFloat:
     def test_ja_numerico_int(self):
         assert brl_para_float(10) == 10.0
 
+    def test_negativo_com_espaco_apos_sinal(self):
+        # Formato visto em /despesas/documentos (Fase 3) — não ocorre nos
+        # endpoints usados desde a Fase 0.
+        assert brl_para_float("- 611,57") == -611.57
+
+    def test_negativo_com_espaco_e_milhar(self):
+        assert brl_para_float("- 1.000,00") == -1000.0
+
+    def test_traco_solto_e_zero(self):
+        # Marcador de vazio/zero visto em /despesas/documentos.
+        assert brl_para_float("-") == 0.0
+
     def test_lixo_retorna_nan(self):
         assert math.isnan(brl_para_float("abc"))
 

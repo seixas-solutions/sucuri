@@ -148,57 +148,85 @@ Todos usam a mesma chave/sessão do coletor atual (respeitar rate limit).
 Criar um coletor por tarefa em `src/sucuri/coletores/`, reutilizando
 `requisitar`/`coletar_paginado`, salvando em `dados/` + `dados/raw/`.
 
-- [ ] **3.1 Despesas por órgão × funcional (visão híbrida)**
-  Endpoint `/despesas/por-orgao` não filtra subfunção, mas o endpoint de
-  documentos (`/despesas/documentos`) e o download em lote (ver EXTERNAL.md,
-  E2) permitem o recorte órgão × subfunção 364. Implementar a via API para
-  2–3 universidades piloto (maiores do Conjunto B) e validar contra o total
-  do Conjunto A.
-  *Aceite:* `dados/despesas_univ_piloto_364.parquet` e nota de validação.
+- [x] **3.1 Despesas por órgão × funcional (visão híbrida)** — concluída em
+  2026-07-16. `src/sucuri/coletores/documentos.py` +
+  `analises/07_despesas_documentos.py`. Piloto: Universidade Federal de
+  Ouro Preto, maio/2025, 837 documentos.
+  *Aceite:* ✅ `dados/despesas_univ_piloto_364.parquet` + validação (49,3%
+  do total do mês é subfunção 364 — fração plausível, não comparação
+  numérica direta com o Conjunto A).
+  *Desvios:* (1) escopo reduzido a 1 instituição/1 mês, não "2–3
+  universidades" — endpoint exige 1 requisição por dia (365×3/ano/
+  instituição); (2) filtra por Unidade Gestora (código SIAFI de 6
+  dígitos), não por `codigoOrgao` (5 dígitos) — sem endpoint público de
+  conversão, achado que também limitou a tarefa 3.7. Detalhes em
+  `relatorios/RELATORIO.md`, seção IV.1.
 
-- [ ] **3.2 Contratos das instituições**
-  Endpoint `/contratos` por `codigoOrgao` (usar os códigos do Conjunto B),
-  anos 2018+. Features: valor contratado/aditivado, prazo, concentração de
-  fornecedores por órgão (índice Herfindahl), % de dispensa/inexigibilidade.
-  *Aceite:* `dados/contratos_mec.parquet` + relatório com órgãos no decil
-  superior de concentração de fornecedores.
+- [x] **3.2 Contratos das instituições** — concluída em 2026-07-16.
+  `src/sucuri/coletores/contratos.py` + `analises/08_contratos.py`.
+  Amostra estratificada de 15 instituições, 2023–2025, 4.266 contratos.
+  *Aceite:* ✅ `dados/contratos_mec.parquet` + HHI por órgão + decil
+  superior (UFF e CAPES). Achado: Fundação Euclides da Cunha concentra
+  86,6% do valor contratado da UFF.
+  *Desvio:* intervalo 2023–2025 em vez de "2018+" — UFRJ sozinha tinha
+  450+ contratos nesse período; cobrir para 15 órgãos custaria centenas de
+  requisições. Detalhes em `relatorios/RELATORIO.md`, seção IV.2.
 
-- [ ] **3.3 Licitações e compras**
-  Endpoint `/licitacoes` por órgão: modalidade, valor, situação. Cruzar com
-  3.2: contratos sem licitação correspondente, licitações desertas repetidas,
-  fracionamento (múltiplas dispensas do mesmo órgão/fornecedor/objeto no ano
-  logo abaixo do teto de dispensa).
-  *Aceite:* `dados/licitacoes_mec.parquet` + lista de indícios de
-  fracionamento com regra explícita e limiar documentado.
+- [x] **3.3 Licitações e compras** — concluída em 2026-07-16.
+  `src/sucuri/coletores/licitacoes.py` +
+  `detectar_fracionamento`/`desertas_repetidas` +
+  `analises/09_licitacoes.py`. 2024 (12 meses), 1.075 licitações.
+  *Aceite:* ✅ `dados/licitacoes_mec.parquet` + 8 indícios de fracionamento
+  com regra e limiar explícitos (≥2 dispensas do mesmo órgão/fornecedor/
+  ano, cada uma < R$ 50.000, somando acima disso).
+  *Bug real corrigido:* `numeroProcesso` no nível raiz do payload de
+  `/contratos` vem sempre vazio — valor real está em
+  `compra.numeroProcesso`, não documentado no Swagger; coberto por teste
+  de regressão. Detalhes em `relatorios/RELATORIO.md`, seção IV.3.
 
-- [ ] **3.4 Sanções: CEIS, CNEP e acordos de leniência**
-  Endpoints `/ceis`, `/cnep`, `/acordos-leniencia`. Cruzar CNPJs sancionados
-  com fornecedores dos contratos de 3.2: contratos firmados com empresa já
-  sancionada na data da assinatura é sinal forte.
-  *Aceite:* `dados/sancoes.parquet` + `dados/contratos_com_sancionados.csv`
-  (pode ser vazio; o cruzamento deve rodar de qualquer forma).
+- [x] **3.4 Sanções: CEIS, CNEP e acordos de leniência** — concluída em
+  2026-07-16. `src/sucuri/coletores/sancoes.py` +
+  `analises/10_sancoes.py`. Consulta direcionada por CNPJ (184
+  fornecedores que somam 80% do valor contratado), não a base nacional
+  inteira (CEIS tem 12.000+ registros).
+  *Aceite:* ✅ `dados/sancoes.parquet` (123 registros) +
+  `dados/contratos_com_sancionados.csv` (0 linhas — cruzamento rodou
+  normalmente). Achado: 27 CNPJs têm sanção E contrato, mas em nenhum
+  caso a sanção precede a assinatura do contrato. Detalhes em
+  `relatorios/RELATORIO.md`, seção IV.4.
 
-- [ ] **3.5 Convênios e transferências**
-  Endpoint `/convenios` (concedente MEC/FNDE/CAPES): valores, convenentes,
-  situação (adimplente/inadimplente), prestação de contas. Sinais:
-  convenentes com múltiplos convênios inadimplentes; concentração de valores
-  em poucos convenentes municipais.
-  *Aceite:* `dados/convenios_mec.parquet` + top 20 convenentes por valor com
-  status de prestação de contas.
+- [x] **3.5 Convênios e transferências** — concluída em 2026-07-16.
+  `src/sucuri/coletores/convenios.py` + `analises/11_convenios.py`.
+  `codigoOrgao=26000` traz FNDE/CAPES automaticamente. 2018–2025, 4.537
+  convênios.
+  *Aceite:* ✅ `dados/convenios_mec.parquet` + top 20 convenentes com
+  status de prestação de contas (só 5 de 4.537 inadimplentes). Fundação
+  Euclides da Cunha aparece pela 3ª vez (R$ 8,3 milhões). Detalhes em
+  `relatorios/RELATORIO.md`, seção IV.5.
 
-- [ ] **3.6 Cartão de Pagamento do Governo Federal (CPGF)**
-  Endpoint `/cartoes` filtrado aos órgãos do Conjunto B: gastos por portador,
-  transações em fim de semana/dezembro, saques vs. compras, valores repetidos
-  logo abaixo de limites de dispensa.
-  *Aceite:* `dados/cpgf_mec.parquet` + relatório com as regras de red flag
-  aplicadas e contagens por órgão.
+- [x] **3.6 Cartão de Pagamento do Governo Federal (CPGF)** — concluída em
+  2026-07-16. `src/sucuri/coletores/cartoes.py` +
+  `analises/12_cartoes.py`. Mesmas 15 instituições, 2023–2025, 16.380
+  transações (maior coleta da fase).
+  *Aceite:* ✅ `dados/cpgf_mec.parquet` + regras de red flag (157 fim de
+  semana, 512 dezembro, 3 prováveis saques por heurística) e contagens
+  por órgão.
+  *Desvio/limitação:* HTTP 400 na página 175 do EBSERH pode ter truncado
+  a coleta dessa instituição (erro de servidor indistinguível de fim de
+  paginação no código atual). Detalhes em `relatorios/RELATORIO.md`,
+  seção IV.6.
 
-- [ ] **3.7 Emendas parlamentares destinadas ao ensino superior**
-  Endpoint `/emendas`: filtrar função Educação e beneficiários que são órgãos
-  do Conjunto B. Sinais: dependência de emendas (% do orçamento), saltos
-  ligados a anos eleitorais.
-  *Aceite:* `dados/emendas_educacao.parquet` + série emendas/orçamento por
-  instituição.
+- [x] **3.7 Emendas parlamentares destinadas ao ensino superior** —
+  concluída em 2026-07-16. `src/sucuri/coletores/emendas.py` +
+  `analises/13_emendas.py`. 2014–2025, 3.348 emendas.
+  *Aceite:* ✅ `dados/emendas_educacao.parquet` + série emendas/orçamento
+  (agregada nacionalmente, não por instituição).
+  *Desvio:* análise por instituição do Conjunto B não foi possível — nem
+  `/emendas` nem `/emendas/documentos/{codigo}` expõem o órgão
+  beneficiário (mesmo obstáculo de UG da tarefa 3.1). Hipótese de saltos
+  em anos eleitorais não confirmada nesta amostra; achado real: dependência
+  de emendas cresceu de ~0,02% para ~0,3–0,7% do orçamento da subfunção
+  364 desde 2020. Detalhes em `relatorios/RELATORIO.md`, seção IV.7.
 
 ## Fase 4 — Cruzamentos com fontes externas (fora do portal)
 

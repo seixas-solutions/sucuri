@@ -25,14 +25,42 @@ uv run --with pandas,pyarrow,requests,python-dotenv python coletar_despesas.py
 Duração típica: alguns minutos. Rodar ao virar o ano ou para atualizar o ano
 corrente. Após a tarefa 0.1 do ROADMAP: apenas `uv run python coletar_despesas.py`.
 
-### X2. Coletas da fase 3 (contratos, licitações, convênios, CPGF, emendas)
-Cada coletor novo (ROADMAP 3.2–3.7) deve ser executado externamente pelo
-usuário (tempo longo + rate limit), ex.:
+### X2. Coletas da Fase 3 em escala (contratos, licitações, convênios, CPGF, emendas)
+Os coletores (`src/sucuri/coletores/*.py`) estão prontos e testados
+(mocks, sem rede, em `tests/`); os pilotos reais rodados nas tarefas
+3.1–3.7 usaram uma amostra de 15 instituições (ou, no caso de convênios,
+todo o MEC de uma vez via `codigoOrgao=26000`), não os ~115 órgãos do
+Conjunto B. Para ampliar:
+
 ```bash
-uv run python -m sucuri.coletores.contratos --ano-inicio 2018
+# Lista completa de códigos de órgão do Conjunto B:
+uv run python -c "
+import pandas as pd
+df = pd.read_parquet('dados/despesas_por_instituicao_v2.parquet')
+print(df[['codigoOrgao','orgao']].drop_duplicates().to_string(index=False))
+"
 ```
-O modelo deve criar o coletor e um teste com 1 órgão × 1 ano; a coleta
-completa fica a cargo do usuário.
+
+- **`analises/08_contratos.py` / `09_licitacoes.py` / `12_cartoes.py`**:
+  editar a lista `INSTITUICOES_PILOTO` no topo do script, trocando as 15
+  instituições pela lista completa acima (ou um subconjunto maior).
+  Volume observado no piloto: ~4.300 contratos, ~1.100 licitações
+  (só 2024), ~16.400 transações CPGF para 15 instituições em 2–3 anos —
+  rodar para ~115 órgãos e/ou período maior pode levar bem mais de 1 hora
+  (`/licitacoes` em particular: 1 requisição por mês por órgão).
+- **`analises/10_sancoes.py`**: editar `COBERTURA_VALOR_ALVO` (hoje 0,80)
+  para consultar mais fornecedores, ou passar a lista completa de CNPJs de
+  `contratos_mec.parquet` em vez do corte por valor.
+- **`analises/11_convenios.py`**: já cobre MEC/FNDE/CAPES inteiro numa
+  chamada (`codigoOrgao=26000`); para ampliar, só o intervalo de datas
+  precisaria mudar (já é 2018–2025).
+- **`analises/13_emendas.py`**: já cobre o país inteiro para a subfunção
+  364 (o filtro é por função/subfunção, não por órgão); nada a ampliar
+  aqui — a limitação é a ausência de instituição beneficiária no payload
+  (ver E6).
+- **`analises/07_despesas_documentos.py`**: exige um código de Unidade
+  Gestora válido por instituição — ver item E6 abaixo antes de tentar
+  rodar para outras instituições além do piloto (Ouro Preto, UG 154046).
 
 ## Downloads manuais / em lote
 
@@ -77,7 +105,36 @@ portal oferece arquivos mensais em CSV que evitam o rate limit da API:
 - TCU: https://pesquisa.apps.tcu.gov.br/ (buscar pelo nome da instituição)
 - CGU: https://eaud.cgu.gov.br/ (relatórios de auditoria por órgão)
 - Consulta manual caso a caso após a tarefa 2.5 gerar os top casos; salvar
-  notas em `dados/externos/tcu_cgu_notas.md`.
+  notas em `dados/externos/tcu_cgu_notas.md`. **Prioridade sugerida pela
+  Fase 3:** a "Fundação Euclides da Cunha de Apoio Institucional à UFF"
+  apareceu como caso atípico em 3 tarefas independentes (3.2, 3.3, 3.5) —
+  ver `relatorios/RELATORIO.md`, Parte IV, introdução.
+
+### E6. Mapeamento código de órgão → Unidade Gestora (pré-requisito para ampliar as tarefas 3.1 e 3.7)
+- **Achado da Fase 3:** `/despesas/documentos` e `/emendas/documentos/{codigo}`
+  filtram/identificam por **Unidade Gestora (UG)**, um código SIAFI de 6
+  dígitos diferente do `codigoOrgao` de 5 dígitos usado em todo o resto do
+  projeto — e esta API não tem endpoint público para converter um no
+  outro (`/orgaos-siafi` só resolve `codigoOrgao`).
+- Os arquivos de download em lote do portal (item E2 acima, conjunto
+  "Despesas — Execução") trazem `codigoOrgao` e `codigoUg` na mesma linha
+  — baixar um mês de qualquer ano, extrair os pares únicos
+  (`codigoOrgao`, `codigoUg`) e montar uma tabela de referência salva em
+  `dados/externos/mapa_orgao_ug.csv` (`codigoOrgao,codigoUg,nomeOrgao`).
+- Com essa tabela, `analises/07_despesas_documentos.py` (tarefa 3.1) e uma
+  eventual extensão de `analises/13_emendas.py` (tarefa 3.7, hoje só
+  agregada nacionalmente) podem rodar por instituição do Conjunto B, não
+  só o piloto de Ouro Preto.
+
+### E7. Confirmação de truncamento no CPGF do EBSERH (opcional, tarefa 3.6)
+- A coleta de `analises/12_cartoes.py` recebeu HTTP 400 ("Erro ao
+  executar a consulta") na página 175 da consulta do EBSERH — o código
+  atual trata isso como fim da paginação, então os 2.610 registros
+  salvos podem estar incompletos.
+- Para confirmar: rodar novamente só o EBSERH
+  (`coletar_cartoes(sessao, "26443", 2023, 2025)`) e comparar a contagem;
+  se ainda parar na mesma página, tentar dividir o intervalo em janelas
+  menores (ex.: ano a ano) para contornar o erro pontual do servidor.
 
 ## Higiene do repositório
 - Adicionar ao `.gitignore` (se ainda não estiver): `dados/externos/`,

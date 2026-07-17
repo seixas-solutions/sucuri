@@ -14,6 +14,17 @@ API_BASE = "https://api.portaldatransparencia.gov.br/api-de-dados"
 ENDPOINT_FUNCIONAL = "/despesas/por-funcional-programatica"
 ENDPOINT_POR_ORGAO = "/despesas/por-orgao"
 
+# Endpoints da Fase 3 (enriquecimento — ver src/sucuri/coletores/).
+ENDPOINT_DESPESAS_DOCUMENTOS = "/despesas/documentos"
+ENDPOINT_CONTRATOS = "/contratos"
+ENDPOINT_LICITACOES = "/licitacoes"
+ENDPOINT_CEIS = "/ceis"
+ENDPOINT_CNEP = "/cnep"
+ENDPOINT_ACORDOS_LENIENCIA = "/acordos-leniencia"
+ENDPOINT_CONVENIOS = "/convenios"
+ENDPOINT_CARTOES = "/cartoes"
+ENDPOINT_EMENDAS = "/emendas"
+
 CODIGO_FUNCAO_EDUCACAO = "12"              # Função orçamentária: Educação
 CODIGO_SUBFUNCAO_ENSINO_SUPERIOR = "364"   # Subfunção: Ensino Superior
 CODIGO_ORGAO_SUPERIOR_MEC = "26000"        # Ministério da Educação

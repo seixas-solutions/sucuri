@@ -510,9 +510,185 @@ foram encontrados e corrigidos durante a própria implementação desta fase
 (ranks locais não recalculados globalmente em 2.3; MAD-zero descartando o
 outlier mais óbvio em 2.4; filtro de "caso candidato" deixando passar
 quase tudo em 2.5) — todos cobertos por testes de regressão em
-`tests/`. Próxima tarefa pendente: **Fase 3 — Enriquecimento com outros
-dados do Portal da Transparência** (contratos, licitações, sanções,
-convênios, CPGF, emendas), que depende de novos coletores (ver ROADMAP.md).
+`tests/`.
+
+---
+
+# Parte IV — Fase 3: Enriquecimento com outros dados do Portal da Transparência
+
+**Data:** 2026-07-16
+**Responsável pela execução:** modelo de linguagem (Sonnet 5), seguindo CLAUDE.md e ROADMAP.md
+
+Cobre as tarefas 3.1 a 3.7 — sete novos coletores em `src/sucuri/coletores/`,
+todos com testes mockados (sem chamadas de rede em `tests/`) e validados
+com pilotos reais contra a API (respeitando o rate limit, ~90 req/min).
+Coleta em escala (mais órgãos, anos completos) fica documentada em
+`EXTERNAL.md` para o usuário rodar externamente — consistente com a
+convenção já estabelecida na Fase 0.
+
+**Achado transversal a destacar:** a "Fundação Euclides da Cunha de Apoio
+Institucional à UFF" apareceu como caso atípico em **três tarefas
+independentes** (3.2: 86,6% do valor contratado da UFF, HHI 7.512, o mais
+alto da amostra; 3.3: padrão de fracionamento, 6 dispensas somando
+R$ 172.030,00 em 2023; 3.5: R$ 8,3 milhões em convênio do MEC). Não é
+prova de irregularidade — fundações de apoio administram muitos pequenos
+repasses de projetos de pesquisa/extensão legitimamente —, mas é
+exatamente o tipo de convergência de sinais independentes que a Fase 4
+(validação contra achados do TCU/CGU) deveria priorizar.
+
+## IV.1 Tarefa 3.1 — Despesas por órgão × funcional (visão híbrida)
+
+**Método:** `/despesas/documentos` é o único endpoint que cruza órgão E
+subfunção ao mesmo tempo. Piloto: Universidade Federal de Ouro Preto
+(UG 154046), maio/2025, 837 documentos.
+
+**Duas limitações empíricas descobertas, não documentadas no Swagger:**
+(1) o endpoint exige **um dia por requisição** (`dataEmissao` não aceita
+intervalo) — cobrir um ano custa até 1.095 requisições por instituição;
+(2) filtra por **Unidade Gestora (UG)**, um código de 6 dígitos diferente
+de `codigoOrgao` (5 dígitos, usado no resto do projeto), sem endpoint
+público para converter um no outro — o código piloto foi encontrado por
+tentativa. Essas duas limitações tornam a tarefa impraticável em escala
+via API sozinha; a alternativa é o download em lote do portal (EXTERNAL.md).
+
+**Resultado:** R$ 27,29 milhões (49,3% do total pago no mês) classificados
+na subfunção 364 — validação de que o mecanismo funciona e produz uma
+fração plausível (bem menor que 100%, coerente com uma universidade ter
+orçamento misto). Achado lateral: 274 documentos da fase "Liquidação" têm
+`valor="-"` — não é erro de parsing, a própria API não reporta valor
+nessa fase.
+
+## IV.2 Tarefa 3.2 — Contratos das instituições
+
+**Método:** `/contratos` por `codigoOrgao` (mais simples que UG) aceita
+intervalo de anos numa única consulta. Amostra estratificada de 15
+instituições (por porte/tipo), 2023–2025 (não 2018+ como sugerido — só a
+UFRJ tinha 450+ contratos em 2018-2025; ver ressalva no relatório da
+tarefa). 4.266 contratos coletados.
+
+**Resultados:** HHI de concentração de fornecedores por órgão (0–10.000);
+UFF no topo (7.512) por causa da Fundação Euclides da Cunha (86,6% do
+valor). 17,2% dos contratos por dispensa/inexigibilidade; 12,4% com valor
+final maior que o inicial (aditivo médio 54,6% acima do valor original
+nesses casos). Hospital de Clínicas de Porto Alegre teve 0 contratos no
+período — item em aberto, não investigado (pode ser sociedade de economia
+mista com regime de contratação distinto).
+
+## IV.3 Tarefa 3.3 — Licitações e compras
+
+**Método:** `/licitacoes` por `codigoOrgao` — **limite de 1 mês por
+requisição** (diferente de `/contratos`), descoberto por erro HTTP 400.
+Coleta restrita a 2024 (12 requisições/instituição), 1.075 licitações.
+
+**Bug real corrigido:** o campo `numeroProcesso` no nível raiz do payload
+de `/contratos` vem sempre "Sem informação" — o valor real está aninhado
+em `compra.numeroProcesso`, não documentado no Swagger. Corrigido em
+`sucuri.coletores.contratos`, com teste de regressão.
+
+**Resultados:** nenhum órgão com ≥2 licitações desertas/fracassadas
+repetidas. 8 indícios de fracionamento (regra: ≥2 dispensas do mesmo
+órgão/fornecedor/ano, cada uma abaixo de R$ 50.000, somando acima disso)
+— o maior é, de novo, a Fundação Euclides da Cunha (6 contratos, R$
+172.030,00). 3.297 de 3.534 contratos não-dispensa não têm licitação
+correspondente na amostra — ressalva forte: licitações só cobrem 2024,
+contratos cobrem 2023–2025, então a maior parte dessa "ausência" é
+esperada pela diferença de janela temporal, não indício de irregularidade.
+
+## IV.4 Tarefa 3.4 — Sanções (CEIS, CNEP, acordos de leniência)
+
+**Método:** consulta **direcionada por CNPJ** (não a base nacional
+inteira — CEIS sozinho tem 12.000+ registros) usando os 184 fornecedores
+que somam 80% do valor contratado (tarefa 3.2) como lista de entrada.
+552 requisições possíveis (184 × 3 fontes), 123 registros de sanção
+encontrados.
+
+**Achado metodológico principal:** 27 CNPJs entre os consultados têm
+sanção registrada E contrato com o MEC (720 combinações contrato×sanção
+no total) — mas em **nenhuma** delas a sanção começou antes ou durante a
+assinatura do contrato correspondente; todas as sanções encontradas
+começaram depois do contrato já assinado. Reportar só o número bruto
+(720) sem o filtro de data teria sido enganoso.
+
+## IV.5 Tarefa 3.5 — Convênios e transferências
+
+**Método:** `/convenios` com `codigoOrgao=26000` (MEC, órgão superior) já
+traz FNDE/CAPES/subordinados na mesma consulta — achado que simplificou a
+coleta em relação a 3.2/3.3 (não precisou iterar por sub-órgão). 2018–2025
+numa única consulta paginada, 4.537 convênios.
+
+**Resultados:** só 5 de 4.537 convênios (0,1%) inadimplentes; nenhum
+convenente com ≥2. Vocabulário de `situacao` conferido integralmente —
+"INADIMPLÊNCIA SUSPENSA" (7 registros) e "AGUARDANDO PRESTAÇÃO DE CONTAS"
+(1) deliberadamente excluídos da contagem por não significarem
+inadimplência atual. Top 20 convenentes dominado por secretarias
+estaduais de educação e fundações de apoio.
+
+## IV.6 Tarefa 3.6 — Cartão de Pagamento do Governo Federal (CPGF)
+
+**Método:** `/cartoes` (tipoCartao=1) para as mesmas 15 instituições,
+2023–2025. 16.380 transações — a maior coleta da fase, o que fez o piloto
+rodar bem mais devagar que as anteriores (~25 minutos).
+
+**Limitação encontrada:** a API retornou HTTP 400 na página 175 da
+consulta do EBSERH — erro genérico de servidor que o código de coleta
+trata como "fim da paginação" (indistinguível de dado realmente
+esgotado). Os 2.610 registros do EBSERH podem estar truncados.
+
+**Resultados:** 157 transações em fim de semana, 512 em dezembro, 3
+prováveis saques (heurística por nome de estabelecimento — sem campo
+oficial na fonte). Os dois maiores casos de valor repetido pelo mesmo
+portador (21× e 20×, ambos no Hospital de Clínicas de Porto Alegre) têm
+frequência próxima de mensal ao longo dos ~35 meses da coleta — leitura
+mais provável é pagamento fixo recorrente, não fracionamento.
+
+## IV.7 Tarefa 3.7 — Emendas parlamentares
+
+**Método:** `/emendas` filtrado por função 12/subfunção 364, 2014–2025,
+3.348 emendas.
+
+**Limitação de escopo:** nem `/emendas` nem `/emendas/documentos/{codigo}`
+expõem a instituição beneficiária (só UF, ou um código de documento
+prefixado por UG sem mapeamento público — o mesmo obstáculo da tarefa
+3.1). A análise ficou no nível agregado nacional da subfunção 364, não
+por instituição do Conjunto B como o ROADMAP original pedia.
+
+**Resultados:** emendas são uma fração pequena do orçamento (mediana
+~0,2%), consistente com a subfunção 364 ser majoritariamente folha de
+pagamento (achado da tarefa 2.1). Mas há um salto real de ordem de
+grandeza — de 0,01–0,04% em 2014–2017 para 0,3–0,7% a partir de 2020 — e
+"RELATOR GERAL" é o 2º maior autor agregado (R$ 74,0 milhões) — contexto
+público já conhecido (emendas de relator, "orçamento secreto", ADPF 850
+no STF em dezembro/2022). A hipótese de saltos em anos eleitorais não se
+confirmou nesta amostra (dependência média 0,19% em anos eleitorais vs.
+0,27% em não eleitorais).
+
+## IV.8 Padrões metodológicos descobertos nesta fase
+
+- **Limites de período variam por endpoint**, não documentados no
+  Swagger: `/despesas/documentos` exige 1 dia; `/licitacoes` exige ≤1 mês;
+  `/contratos` e `/convenios` aceitam anos inteiros numa única consulta.
+  Motivo prático para escolher datas de coleta e escopo de piloto em cada
+  tarefa.
+- **Código de Unidade Gestora (UG) ≠ `codigoOrgao`**, sem endpoint público
+  de conversão — obstáculo real em duas tarefas (3.1, 3.7), sem solução
+  completa nesta fase; só resolvível com os arquivos de download em lote
+  do portal (EXTERNAL.md).
+- **Erros HTTP genéricos do servidor (400 "Erro ao executar a consulta")
+  são indistinguíveis de fim de paginação** no código atual — achado da
+  tarefa 3.6, pode truncar coletas silenciosamente sem lançar exceção.
+- `brl_para_float` (usada desde a Fase 0) precisou ser generalizada nesta
+  fase para valores negativos com espaço após o sinal ("- 611,57") e
+  traço solto como marcador de zero ("-") — formatos vistos só nos
+  endpoints novos da Fase 3, cobertos por teste de regressão.
+
+## IV.9 Estado do ROADMAP após a Fase 3
+
+Tarefas 3.1 a 3.7 marcadas como concluídas em `ROADMAP.md`, cada uma com
+os desvios de escopo documentados (a maioria por limitações reais da API
+descobertas durante a implementação, não por escolha). Próxima tarefa
+pendente: **Fase 4 — Cruzamentos com fontes externas** (custo por aluno
+via INEP, dotação SIOP, validação TCU/CGU), que depende de arquivos
+baixados manualmente (EXTERNAL.md, itens E3–E5).
 
 ---
 
