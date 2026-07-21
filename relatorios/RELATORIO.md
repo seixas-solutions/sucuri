@@ -692,6 +692,186 @@ baixados manualmente (EXTERNAL.md, itens E3–E5).
 
 ---
 
+# Parte V — Fase 4: Cruzamentos com fontes externas
+
+**Data:** 2026-07-21
+**Responsável pela execução:** modelo de linguagem (Fable 5), seguindo CLAUDE.md e ROADMAP.md
+
+**Situação da fase:** as tarefas 4.1 (INEP), 4.2 (SIOP) e 4.3 (TCU/CGU)
+estão **bloqueadas** por dependerem de downloads/consultas manuais ainda não
+realizados (EXTERNAL.md, itens E3–E5; `dados/externos/` contém apenas o IPCA
+e, agora, a população do IBGE) — puladas e sinalizadas conforme a regra da
+fase. Foi executada a tarefa **4.4 (cruzamento com o IBGE)**, adicionada ao
+ROADMAP por pedido do usuário: incluir uma API do IBGE para cruzar com os
+dados do Portal da Transparência.
+
+## V.1 Tarefa 4.4 — Cruzamento com a população do IBGE
+
+**Fonte nova:** API de agregados do IBGE
+(`servicodados.ibge.gov.br/api/v3/agregados`) — pública, sem chave, sem
+relação com `GOVBR_API_KEY`. Cliente reutilizável em `src/sucuri/ibge.py`;
+`analises/00b_baixar_ibge.py` baixa a população residente estimada
+(agregado 6579, variável 9324) para Brasil e por UF, 2014–2025, salvando em
+`dados/externos/ibge_populacao_{brasil,uf}.csv`. **Ressalva estrutural da
+fonte:** 2022 e 2023 não têm estimativa publicada nesse agregado (anos de
+Censo/transição) — foram preenchidos por interpolação linear entre vizinhos
+e marcados com `interpolado=True`, ressalva propagada a todas as saídas.
+
+**Cruzamento 1 — despesa real per capita nacional** (método: `pago_real`
+anual do Conjunto A `_v2`, ano parcial excluído, ÷ população do Brasil no
+ano): a trajetória em U da tarefa 2.1 **persiste em termos per capita** —
+pico em 2015 (R$ 238,88/hab, R$ de 2025), piso em 2021–2022
+(R$ 163,40 e R$ 163,32/hab — empate técnico, sendo 2022 calculado com
+população interpolada), recuperação parcial até 2025 (R$ 192,48/hab, ainda
+~19% abaixo do pico). O crescimento populacional (~5% no período) não
+explica nem a queda nem a recuperação; em compensação, o "novo máximo da
+série" de 2025 visto em valores absolutos (tarefa 2.1, Conjunto B) **não é
+máximo em termos per capita da subfunção 364** — nuance nova que os valores
+absolutos escondiam. Saída: `dados/per_capita_nacional.csv` +
+`figuras/09_per_capita_nacional.png`.
+
+**Cruzamento 2 — emendas parlamentares per capita por UF** (método:
+`valorPago` das 3.348 emendas da tarefa 3.7, deflacionado para R$ de 2025,
+somado por UF — UF extraída de `localidadeDoGasto` por
+`sucuri.ibge.extrair_uf` — ÷ população média da UF em 2014–2025; z-score
+robusto `0,6745·(x−mediana)/MAD` entre as 27 UFs, limiar |z| > 3,5, o mesmo
+de `flag_anomalia_robusto`):
+
+| UF | Per capita (R$ de 2025) | z-score robusto |
+|---|---:|---:|
+| AC | 48,55 | **14,28** |
+| RJ | 26,59 | **7,30** |
+| DF | 21,26 | **5,61** |
+| AP | 21,04 | **5,54** |
+| (mediana das 27 UFs) | 3,61 | 0 |
+
+- 148 das 3.348 emendas (10,4% do valor real) não têm UF atribuível
+  ("Nacional", regiões, "MÚLTIPLO") e ficam fora do rateio — quantificado,
+  não descartado silenciosamente.
+- **Leitura de atipicidade, não de irregularidade:** per capita alto em UF
+  pequena é esperado quando a emenda financia uma instituição federal que
+  atende além da própria UF (AC e AP têm uma universidade federal cada para
+  populações pequenas); o RJ, porém, é populoso e mesmo assim fica 7× acima
+  da mediana — candidato natural a drill-down se a Fase 4 manual avançar.
+- Saída: `dados/emendas_per_capita_uf.csv` +
+  `figuras/10_emendas_per_capita_uf.png` + `relatorios/14_ibge.md`.
+
+**Infraestrutura nova testada:** `tests/test_ibge.py` (16 testes: parsing
+do payload da API, interpolação sem extrapolação, extração de UF nos três
+formatos observados, `zscore_robusto` com MAD zero). O cliente
+`consultar_agregado` é genérico — PIB por UF (agregado 5938) e Censo 2022
+(9514) podem ser incorporados sem código novo de rede.
+
+---
+
+# Parte VI — Fase 5: Produto final
+
+**Data:** 2026-07-21
+**Responsável pela execução:** modelo de linguagem (Fable 5), seguindo CLAUDE.md e ROADMAP.md
+
+## VI.1 Tarefa 5.3 — Automação da recoleta (incremental)
+
+**Método:** um exercício orçamentário só é definitivo depois de encerrado.
+`coletar_despesas.py --incremental` (lógica em `src/sucuri/incremental.py`)
+localiza o bruto mais recente `dados/raw/<base>_raw_YYYYMMDD.json`, e
+recoleta apenas os anos **ausentes** do bruto ou **≥ ano do carimbo** (o
+exercício estava em aberto quando a coleta anterior rodou); os demais anos
+são reaproveitados sem nenhuma requisição. Os registros mesclados passam
+pelo mesmo `construir_df_*` de sempre — nenhuma fórmula duplicada — e o
+bruto mesclado é salvo com o carimbo do dia, mantendo o contrato de
+`detectar_ano_coleta` (tarefa 1.3).
+
+**Validação:** rodada em sandbox com `--ano-fim 2025` sobre o bruto de
+julho/2026 → zero requisições à API e reconstrução dos dois conjuntos com
+os mesmos totais (1.318/1.484 registros, mesmos valores e flags da coleta
+original) — idempotência verificada. 14 testes em
+`tests/test_incremental.py` (virada de ano, ano faltante no meio, recoleta
+vazia, carimbo inválido). Rotina mensal documentada em EXTERNAL.md (X1b).
+
+## VI.2 Tarefa 5.2 — Painel interativo (Streamlit)
+
+`painel/app.py`, dependência isolada no grupo `painel`
+(`uv run --group painel streamlit run painel/app.py`). Cinco páginas, todas
+somente leitura dos artefatos de `dados/` (o painel não recalcula nada):
+séries por instituição (Conjunto B `_v2`, real vs. empenhado, anos
+flageados), mapa de flags instituição × ano por tipo, casos priorizados da
+tarefa 2.5 com filtros, drill-down de contratos/fornecedores (tarefa 3.2) e
+cruzamentos IBGE (tarefa 4.4). O aviso "atipicidade ≠ irregularidade" é
+fixo na barra lateral — o painel herda a linguagem de indício do projeto.
+
+## VI.3 Tarefa 5.1 — Relatório executivo
+
+### Objeto e dados
+
+Despesas federais com Ensino Superior (subfunção 364) e órgãos do MEC,
+2014–2026 (2026 parcial), em duas granularidades (Conjunto A:
+programa/ação; Conjunto B: total por órgão), enriquecidas na Fase 3 com
+contratos, licitações, sanções, convênios, CPGF e emendas (pilotos de 15
+instituições ou recortes documentados) e, na Fase 4, com a população do
+IBGE. Todos os valores comparados entre anos estão em R$ de 2025 (IPCA).
+
+### Metodologia em pipeline
+
+1. **Qualidade (Fase 1):** deduplicação de grafias divergentes da fonte,
+   deflacionamento, exclusão de ano parcial e séries curtas da base
+   estatística — as duas maiores fontes de falso positivo conhecidas.
+2. **Detecção (Fase 2):** quatro famílias independentes de sinal — flags de
+   regra (z-scores, saltos), Benford (descartado como não informativo para
+   estes agregados), Isolation Forest + LOF multivariados, resíduos de
+   tendência Theil–Sen — trianguladas na tarefa 2.5: um caso só entra se
+   algum sinal dispara de fato, e a ordenação prioriza sinais concordantes.
+3. **Enriquecimento (Fase 3):** concentração de fornecedores (HHI),
+   fracionamento de dispensas, sanções × contratos com filtro temporal,
+   convênios inadimplentes, red flags de CPGF, dependência de emendas.
+4. **Contexto externo (Fase 4, parcial):** normalização per capita (IBGE).
+
+### Top casos com evidências de múltiplas fontes
+
+- **Fundação Euclides da Cunha de Apoio Institucional à UFF** — único caso
+  atípico em **três fontes independentes da Fase 3**: 86,6% do valor
+  contratado da UFF (HHI 7.512, o maior da amostra), padrão compatível com
+  fracionamento (6 dispensas de 2023 somando R$ 172 mil) e R$ 8,3 milhões
+  em convênios do MEC. Primeira prioridade para a validação TCU/CGU
+  (tarefa 4.3, bloqueada).
+- **Universidade Federal Rural do Rio de Janeiro** — queda sustentada
+  2019→2021 com recuperação parcial (resíduo de Theil–Sen −4,2σ em 2021,
+  −3,8σ em 2022, 3 sinais concordantes), sem explicação estrutural
+  identificada nas Fases 2–3.
+- **Fundação Universidade Federal do Vale do São Francisco** — o maior
+  desvio de tendência de toda a série (+7,8σ em 2025, 3 sinais), também
+  sem explicação estrutural.
+- **Camada 2025:** 35 dos 176 casos e quase metade da camada de maior
+  confiança estão em 2025 — leitura recomendada: manifestação, instituição
+  a instituição, da recuperação orçamentária macro pós-2021 (per capita
+  ainda 19% abaixo do pico de 2015), não eventos independentes. A pergunta
+  de investigação correta é "quem cresceu acima da média do setor".
+- **Padrões já explicados** (não priorizar): universidades da expansão
+  2013–2014, ação genérica de folha de pagamento (2 maiores linhas do
+  Conjunto A), dominância de escala da UFRJ, FNDE como "maior instituição"
+  (soma todas as funções do órgão).
+
+### Limitações e ressalvas permanentes
+
+- Atipicidade estatística ≠ irregularidade — vale para todo número acima.
+- Conjunto B não separa ensino superior das demais funções do órgão; o
+  denominador per capita não separa hospital universitário/pesquisa.
+- Fase 3 cobre amostras/pilotos (15 instituições; licitações só 2024;
+  CPGF do EBSERH possivelmente truncado — E7), não o universo.
+- Emendas e documentos de despesa não são atribuíveis a instituição via
+  API (obstáculo UG × código de órgão, E6).
+- População IBGE de 2022–2023 interpolada.
+- Sem a Fase 4 manual (INEP, SIOP, TCU/CGU), os sinais não têm validação
+  externa: precisão desconhecida por construção.
+
+## VI.4 Estado do ROADMAP após a Fase 5
+
+Tarefas 5.1, 5.2 e 5.3 concluídas; 4.4 (IBGE) concluída; 4.1–4.3
+permanecem bloqueadas aguardando os insumos manuais E3–E5 (EXTERNAL.md).
+O projeto está em estado de manutenção: rotina mensal X1b + investigação
+manual dos top casos quando os insumos externos chegarem.
+
+---
+
 ## Instrução de manutenção deste relatório
 
 A partir da Fase 1, toda nova tarefa do ROADMAP que gerar análise, medida

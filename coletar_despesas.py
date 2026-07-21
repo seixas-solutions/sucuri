@@ -43,6 +43,7 @@ Uso:
     python coletar_despesas.py --ano-inicio 2018 --ano-fim 2025
     python coletar_despesas.py --somente funcional
     python coletar_despesas.py --somente instituicao
+    python coletar_despesas.py --incremental      # só anos novos/em aberto
     python coletar_despesas.py --env /caminho/.env
 """
 
@@ -61,10 +62,18 @@ from sucuri.api import (
     ENDPOINT_POR_ORGAO,
     ENV_PATH_PADRAO,
     carregar_chave_api,
-    coletar_intervalo,
+    coletar_anos,
     criar_sessao,
 )
 from sucuri.features import construir_df_funcional, construir_df_instituicao
+from sucuri.incremental import (
+    ano_do_carimbo,
+    anos_a_coletar,
+    anos_presentes,
+    carregar_registros,
+    mesclar_registros,
+    raw_mais_recente,
+)
 from sucuri.persistencia import escrever_dicionario, resumir, salvar_dataset
 
 logging.basicConfig(
@@ -73,6 +82,30 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 log = logging.getLogger("despesas_ensino_superior")
+
+
+def coletar_painel(sessao, endpoint, params_por_ano, args, nome: str, nome_base: str) -> list[dict]:
+    """Coleta um painel no intervalo pedido, integral ou incrementalmente.
+
+    No modo incremental, reaproveita o bruto mais recente de `dados/raw/` e só
+    requisita à API os anos ausentes ou ainda em aberto na última coleta
+    (ver `sucuri.incremental`). Sem bruto anterior, cai na coleta integral.
+    """
+    dir_raw = Path(args.dir_saida) / "raw"
+    caminho_anterior = raw_mais_recente(dir_raw, nome_base) if args.incremental else None
+    if caminho_anterior is None:
+        if args.incremental:
+            log.info("[%s] sem bruto anterior em %s — coleta integral.", nome, dir_raw)
+        return coletar_anos(sessao, endpoint, params_por_ano,
+                            range(args.ano_inicio, args.ano_fim + 1), nome)
+
+    antigos = carregar_registros(caminho_anterior)
+    anos = anos_a_coletar(anos_presentes(antigos), args.ano_inicio, args.ano_fim,
+                          ano_do_carimbo(caminho_anterior))
+    log.info("[%s] incremental sobre %s: recoletando anos %s.",
+             nome, caminho_anterior.name, anos or "nenhum")
+    novos = coletar_anos(sessao, endpoint, params_por_ano, anos, nome)
+    return mesclar_registros(antigos, novos, anos)
 
 
 def main() -> None:
@@ -84,6 +117,9 @@ def main() -> None:
     parser.add_argument("--dir-saida", default="dados", help="Diretório de saída")
     parser.add_argument("--somente", choices=["funcional", "instituicao"], default=None,
                         help="Coletar apenas um dos painéis (padrão: ambos)")
+    parser.add_argument("--incremental", action="store_true",
+                        help="Reaproveitar o bruto mais recente e coletar só anos "
+                             "ausentes ou em aberto na última coleta")
     args = parser.parse_args()
 
     chave = carregar_chave_api(args.env)
@@ -94,11 +130,11 @@ def main() -> None:
     if args.somente in (None, "funcional"):
         log.info("=== (A) Painel funcional-programático: Ensino Superior (%s a %s) ===",
                  args.ano_inicio, args.ano_fim)
-        registros = coletar_intervalo(
+        registros = coletar_painel(
             sessao, ENDPOINT_FUNCIONAL,
             lambda ano: {"ano": ano, "funcao": CODIGO_FUNCAO_EDUCACAO,
                          "subfuncao": CODIGO_SUBFUNCAO_ENSINO_SUPERIOR},
-            args.ano_inicio, args.ano_fim, "funcional",
+            args, "funcional", "despesas_ensino_superior",
         )
         df_a = construir_df_funcional(registros)
         salvar_dataset(df_a, registros, dir_saida, "despesas_ensino_superior")
@@ -108,10 +144,10 @@ def main() -> None:
     if args.somente in (None, "instituicao"):
         log.info("=== (B) Painel por instituição: órgãos do MEC (%s a %s) ===",
                  args.ano_inicio, args.ano_fim)
-        registros = coletar_intervalo(
+        registros = coletar_painel(
             sessao, ENDPOINT_POR_ORGAO,
             lambda ano: {"ano": ano, "orgaoSuperior": CODIGO_ORGAO_SUPERIOR_MEC},
-            args.ano_inicio, args.ano_fim, "instituicao",
+            args, "instituicao", "despesas_por_instituicao",
         )
         df_b = construir_df_instituicao(registros)
         salvar_dataset(df_b, registros, dir_saida, "despesas_por_instituicao")

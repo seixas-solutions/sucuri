@@ -110,13 +110,18 @@ def coletar_paginado(sessao: requests.Session, endpoint: str, params_base: dict,
     return registros
 
 
-def coletar_intervalo(sessao, endpoint, params_por_ano, ano_inicio, ano_fim, nome) -> list[dict]:
-    """Coleta um intervalo de anos aplicando `params_por_ano(ano)` a cada ano."""
+def coletar_anos(sessao, endpoint, params_por_ano, anos, nome) -> list[dict]:
+    """Coleta uma lista arbitrária de anos aplicando `params_por_ano(ano)` a cada um."""
     todos: list[dict] = []
-    for ano in range(ano_inicio, ano_fim + 1):
+    for ano in anos:
         log.info("[%s] coletando ano %s ...", nome, ano)
         registros = coletar_paginado(sessao, endpoint, params_por_ano(ano), f"{nome} {ano}")
         if not registros:
             log.info("[%s] ano %s: sem dados.", nome, ano)
         todos.extend(registros)
     return todos
+
+
+def coletar_intervalo(sessao, endpoint, params_por_ano, ano_inicio, ano_fim, nome) -> list[dict]:
+    """Coleta um intervalo contíguo de anos (ver `coletar_anos`)."""
+    return coletar_anos(sessao, endpoint, params_por_ano, range(ano_inicio, ano_fim + 1), nome)

@@ -239,11 +239,16 @@ Se ausentes, pular a tarefa e sinalizar.
   `tipo_instituicao` (z-score robusto).
   *Aceite:* `dados/custo_por_aluno.parquet` + ranking com ressalva explícita
   de que o denominador não separa hospital universitário/pesquisa.
+  **⏸ Bloqueada (sinalizado em 2026-07-21):** `dados/externos/inep/` não
+  existe — depende do download manual E3 (EXTERNAL.md). Pulada conforme a
+  regra da fase.
 
 - [ ] **4.2 Orçamento autorizado (LOA/SIOP)**
   Comparar dotação autorizada (E4) com empenhado do Conjunto A: execução
   <60% ou >100% da dotação por programa/ação.
   *Aceite:* tabela de divergências dotação × execução por ano.
+  **⏸ Bloqueada (sinalizado em 2026-07-21):** `dados/externos/siop_dotacao.csv`
+  ausente — depende do export manual E4 (EXTERNAL.md).
 
 - [ ] **4.3 Validação contra achados públicos (TCU/CGU)**
   Verificar se os top casos da tarefa 2.5 aparecem em acórdãos do TCU ou
@@ -251,19 +256,46 @@ Se ausentes, pular a tarefa e sinalizar.
   "confirmar culpa".
   *Aceite:* tabela caso × achado público (sim/não/não pesquisável) em
   `relatorios/validacao_tcu.md`.
+  **⏸ Bloqueada (sinalizado em 2026-07-21):** `dados/externos/tcu_cgu_notas.md`
+  ausente — depende da consulta manual E5 (EXTERNAL.md; priorizar a Fundação
+  Euclides da Cunha/UFF, atípica em 3 tarefas independentes da Fase 3).
+
+- [x] **4.4 Cruzamento com a população do IBGE** — concluída em 2026-07-21
+  (tarefa adicionada por pedido do usuário: incluir uma API do IBGE para
+  cruzar com o Portal da Transparência). `src/sucuri/ibge.py` (cliente da
+  API de agregados, pública, sem chave) + `analises/00b_baixar_ibge.py`
+  (população residente estimada, agregado 6579, Brasil e por UF, 2014–2025;
+  2022–2023 interpolados e marcados) + `analises/14_ibge_cruzamento.py`.
+  *Aceite:* ✅ `dados/per_capita_nacional.csv` + `dados/emendas_per_capita_uf.csv`
+  + 2 figuras + `relatorios/14_ibge.md`. Achados: trajetória em U persiste
+  per capita (pico 2015, piso 2021–2022); emendas per capita por UF com 4
+  UFs atípicas (AC z=14,3; RJ 7,3; DF 5,6; AP 5,5; z-score robusto entre
+  27 UFs). Testes em `tests/test_ibge.py`. Detalhes em
+  `relatorios/RELATORIO.md`, seção V.1.
 
 ## Fase 5 — Produto final
 
-- [ ] **5.1 Relatório executivo**
-  Consolidar tudo em `relatorios/RELATORIO.md`: metodologia, ressalvas,
-  top casos priorizados com evidências de múltiplas fontes, limitações.
-  Linguagem: indícios/atipicidades, nunca acusações.
-- [ ] **5.2 Painel interativo (opcional)**
-  Dashboard local (ex.: Streamlit) com séries por instituição, mapa de flags
-  e drill-down para contratos/fornecedores.
-- [ ] **5.3 Automação da recoleta**
-  Tornar a coleta idempotente/incremental (só anos novos ou ano corrente) e
-  documentar rotina mensal em EXTERNAL.md.
+- [x] **5.1 Relatório executivo** — concluída em 2026-07-21.
+  Parte VI de `relatorios/RELATORIO.md` (e da versão LaTeX/PDF): metodologia
+  em pipeline, ressalvas consolidadas, top casos com evidências de múltiplas
+  fontes (Fundação Euclides da Cunha/UFF em 3 fontes; UFRRJ; UNIVASF),
+  limitações e o que a Fase 4 pendente adicionaria.
+  *Aceite:* ✅ linguagem de indício/atipicidade em todo o texto; nenhum
+  número sem método declarado.
+- [x] **5.2 Painel interativo (opcional)** — concluída em 2026-07-21.
+  `painel/app.py` (Streamlit, grupo de dependências `painel`): séries por
+  instituição, mapa de flags, casos priorizados, drill-down de contratos/
+  fornecedores e cruzamentos IBGE. Rodar:
+  `uv run --group painel streamlit run painel/app.py`.
+  *Aceite:* ✅ somente leitura de `dados/` (não recalcula nada); aviso
+  metodológico fixo na barra lateral.
+- [x] **5.3 Automação da recoleta** — concluída em 2026-07-21.
+  `coletar_despesas.py --incremental` + `src/sucuri/incremental.py`: reusa o
+  bruto mais recente de `dados/raw/` e recoleta só anos ausentes ou com
+  exercício em aberto na última coleta (regra: ano ≥ ano do carimbo do bruto);
+  idempotente (mesma entrada → mesma saída; validado em sandbox com 0
+  requisições e reconstrução idêntica dos conjuntos). Rotina mensal
+  documentada em EXTERNAL.md (X1b). Testes em `tests/test_incremental.py`.
 
 ---
 

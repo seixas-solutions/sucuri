@@ -20,6 +20,9 @@ dev = [
     "ruff>=0.6",
     "pytest>=8.0",
 ]
+painel = [
+    "streamlit>=1.35",
+]
 
 [build-system]
 requires = ["hatchling"]

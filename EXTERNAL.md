@@ -20,10 +20,31 @@ com nome indicado abaixo, e nunca commitar dados brutos grandes nem credenciais.
 ### X1. Recoleta dos dados de despesas
 ```bash
 cd ~/Library/CloudStorage/Dropbox/Repositories/seixas-solutions/sucuri
-uv run --with pandas,pyarrow,requests,python-dotenv python coletar_despesas.py
+uv run python coletar_despesas.py                # integral (2014..ano atual)
+uv run python coletar_despesas.py --incremental  # só anos novos/em aberto (tarefa 5.3)
 ```
-Duração típica: alguns minutos. Rodar ao virar o ano ou para atualizar o ano
-corrente. Após a tarefa 0.1 do ROADMAP: apenas `uv run python coletar_despesas.py`.
+Duração: alguns minutos na coleta integral; segundos no modo incremental
+(fora da virada de ano ele só recoleta o exercício corrente). O modo
+incremental reaproveita o bruto mais recente de `dados/raw/` e recoleta
+apenas os anos ausentes ou que estavam com exercício em aberto na última
+coleta (regra em `src/sucuri/incremental.py`, testada em
+`tests/test_incremental.py`); sem bruto anterior, cai na coleta integral.
+
+### X1b. Rotina mensal de recoleta (tarefa 5.3)
+Uma vez por mês (ex.: dia 1º), rodar em sequência:
+```bash
+cd ~/Library/CloudStorage/Dropbox/Repositories/seixas-solutions/sucuri
+uv run python analises/00_baixar_ipca.py          # IPCA atualizado (BCB)
+uv run python analises/00b_baixar_ibge.py         # população IBGE (sem chave)
+uv run python coletar_despesas.py --incremental   # despesas: só anos em aberto
+uv run python analises/01b_deflacionar.py         # regera *_real
+uv run python analises/01c_ano_parcial_e_flags.py # regera *_v2 (base das análises)
+uv run python analises/14_ibge_cruzamento.py      # per capita / emendas por UF
+```
+As análises da Fase 2 (02_eda a 06_casos) só precisam ser rodadas de novo
+quando os `*_v2` mudarem de forma relevante (ano novo ou revisão da API).
+Atenção: o pipeline continua assumindo o ano do carimbo mais recente de
+`dados/raw/` como ano parcial — rodar a rotina completa, não etapas soltas.
 
 ### X2. Coletas da Fase 3 em escala (contratos, licitações, convênios, CPGF, emendas)
 Os coletores (`src/sucuri/coletores/*.py`) estão prontos e testados
@@ -79,6 +100,18 @@ print(df[['codigoOrgao','orgao']].drop_duplicates().to_string(index=False))
   https://www.ibge.gov.br/estatisticas/economicas/precos-e-custos/9256-indice-nacional-de-precos-ao-consumidor-amplo.html
   — nesse caso, montar manualmente o CSV no mesmo formato
   (`ano,ipca_acumulado_pct`) e salvar em `dados/externos/ipca_anual.csv`.
+
+### E1b. População do IBGE (pré-requisito da tarefa 4.4) — ✅ automatizado
+- **Automatizado** em `analises/00b_baixar_ibge.py`: baixa a população
+  residente estimada (Brasil e por UF) da API de agregados do IBGE
+  (`https://servicodados.ibge.gov.br/api/v3/agregados`, agregado 6579,
+  variável 9324 — pública, sem cadastro, sem relação com `GOVBR_API_KEY`)
+  e salva `dados/externos/ibge_populacao_brasil.csv` e
+  `dados/externos/ibge_populacao_uf.csv`. Anos sem estimativa publicada
+  (2022, 2023) são interpolados linearmente e marcados em `interpolado`.
+- Cliente reutilizável em `src/sucuri/ibge.py` — outros agregados do IBGE
+  (PIB por UF: 5938; Censo 2022: 9514) podem ser consultados com
+  `consultar_agregado` sem código novo de rede.
 
 ### E2. Downloads em lote do Portal da Transparência
 Para volumes grandes (despesas detalhadas por documento, CPGF completo), o

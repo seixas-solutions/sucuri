@@ -35,6 +35,19 @@ def razao_segura(numerador: pd.Series, denominador: pd.Series) -> pd.Series:
     return numerador / den
 
 
+def zscore_robusto(serie: pd.Series) -> pd.Series:
+    """Z-score robusto de uma amostra: 0,6745 × (x − mediana) / MAD.
+
+    Mesma fórmula usada em `features.features_serie_temporal`, aqui para uma
+    comparação transversal (ex.: UFs entre si num mesmo período). MAD zero
+    (mais da metade dos valores idênticos) produz NaN, não erro.
+    """
+    mad = (serie - serie.median()).abs().median()
+    if pd.isna(mad) or mad == 0:
+        return pd.Series(pd.NA, index=serie.index, dtype="Float64")
+    return 0.6745 * (serie - serie.median()) / mad
+
+
 def classificar_instituicao(descricao: str) -> str:
     """Classifica o órgão do MEC em categorias para comparação entre pares."""
     d = (descricao or "").upper()
