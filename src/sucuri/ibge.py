@@ -1,37 +1,33 @@
-"""Cliente da API de agregados do IBGE (SIDRA/servicodados) e utilidades de
+"""Coleta de dados do IBGE via sidrapy (API SIDRA) e utilidades de
 cruzamento com os dados do Portal da Transparência.
 
-A API é pública e não exige chave nem cadastro (diferente da API do Portal —
-nenhuma relação com `GOVBR_API_KEY`). Documentação:
-https://servicodados.ibge.gov.br/api/docs/agregados
+A API SIDRA é pública e não exige chave nem cadastro (nenhuma relação com
+`GOVBR_API_KEY`). A coleta usa a biblioteca `sidrapy`
+(https://pypi.org/project/sidrapy/), wrapper oficial-comunitário de
+https://apisidra.ibge.gov.br/.
 
-Agregados usados neste projeto:
-- 6579 — População residente estimada (variável 9324), níveis N1 (Brasil) e
-  N3 (UF). A série tem lacunas nos anos de Censo/Contagem (ex.: 2007, 2010,
-  2022) e em 2023 — ver `interpolar_anos_faltantes` para o tratamento.
+Tabelas usadas neste projeto:
+- 6579 — População residente estimada (variável 9324), níveis 1 (Brasil) e
+  3 (UF). A série tem lacunas nos anos de Censo/transição (ex.: 2022, 2023)
+  — ver `interpolar_anos_faltantes` para o tratamento.
+- 5938 — Contas Regionais: PIB a preços correntes (variável 37, mil R$),
+  nível 3 (UF). Publicada com defasagem de ~2 anos (última: 2022).
 """
 
 from __future__ import annotations
 
 import logging
-import time
 
 import pandas as pd
-import requests
+import sidrapy
 
-URL_AGREGADOS = (
-    "https://servicodados.ibge.gov.br/api/v3/agregados/"
-    "{agregado}/periodos/{periodos}/variaveis/{variavel}"
-)
-
-AGREGADO_POPULACAO = "6579"
+TABELA_POPULACAO = "6579"
 VARIAVEL_POPULACAO = "9324"
+TABELA_PIB_UF = "5938"
+VARIAVEL_PIB = "37"
 
-NIVEL_BRASIL = "N1"
-NIVEL_UF = "N3"
-
-PAUSA_ENTRE_REQUISICOES_S = 0.3  # API pública sem limite documentado; cortesia
-TIMEOUT_S = 60
+NIVEL_BRASIL = "1"  # nível territorial da SIDRA (não confundir com N1/N3 da API de agregados)
+NIVEL_UF = "3"
 
 # Nome oficial (maiúsculas, com acentos — como aparece tanto no IBGE quanto no
 # campo `localidadeDoGasto` das emendas) -> sigla da UF.
@@ -50,53 +46,61 @@ SIGLA_POR_NOME_UF = {
 log = logging.getLogger("sucuri.ibge")
 
 
-def consultar_agregado(
-    agregado: str,
-    variavel: str,
-    periodos: list[int] | list[str],
-    nivel: str = NIVEL_UF,
-    sessao: requests.Session | None = None,
-) -> list[dict]:
-    """Consulta um agregado do IBGE para uma lista de períodos (anos).
-
-    Retorna o payload JSON bruto da API (lista com uma entrada por variável).
-    Períodos inexistentes no agregado são simplesmente omitidos da resposta,
-    não geram erro.
-    """
-    sessao = sessao or requests.Session()
-    url = URL_AGREGADOS.format(
-        agregado=agregado,
-        periodos="|".join(str(p) for p in periodos),
-        variavel=variavel,
+def coletar_tabela_sidra(
+    tabela: str, variavel: str, periodo: str, nivel: str = NIVEL_UF
+) -> pd.DataFrame:
+    """Baixa uma tabela da SIDRA via sidrapy e a normaliza com
+    `normalizar_sidra`. `periodo` no formato da SIDRA (ex.: "2014-2025")."""
+    bruto = sidrapy.get_table(
+        table_code=tabela,
+        territorial_level=nivel,
+        ibge_territorial_code="all",
+        variable=variavel,
+        period=periodo,
     )
-    resp = sessao.get(url, params={"localidades": f"{nivel}[all]"}, timeout=TIMEOUT_S)
-    resp.raise_for_status()
-    time.sleep(PAUSA_ENTRE_REQUISICOES_S)
-    return resp.json()
+    return normalizar_sidra(bruto)
 
 
-def extrair_series(payload: list[dict]) -> pd.DataFrame:
-    """Achata o payload da API de agregados em colunas
-    `(localidade_id, localidade, ano, valor)`.
+def normalizar_sidra(bruto: pd.DataFrame) -> pd.DataFrame:
+    """Achata o retorno do sidrapy em `(localidade_id, localidade, ano, valor)`.
 
-    Valores não numéricos usados pelo IBGE como marcadores ("-", "...", "X",
-    valor ausente) viram NaN.
+    O sidrapy devolve as dimensões como pares de colunas D1C/D1N, D2C/D2N, ...
+    cuja ordem varia conforme a tabela; a primeira linha do DataFrame contém
+    os rótulos humanos de cada coluna (ex.: "Ano", "Unidade da Federação") e
+    é usada aqui para identificar qual par é o ano e qual é o território —
+    nunca posições fixas. Marcadores não numéricos da SIDRA ("-", "..",
+    "...", "X") viram NaN.
     """
-    linhas = []
-    for variavel in payload:
-        for resultado in variavel.get("resultados", []):
-            for serie in resultado.get("series", []):
-                localidade = serie.get("localidade", {})
-                for ano, valor in serie.get("serie", {}).items():
-                    linhas.append(
-                        {
-                            "localidade_id": localidade.get("id"),
-                            "localidade": localidade.get("nome"),
-                            "ano": int(ano),
-                            "valor": pd.to_numeric(valor, errors="coerce"),
-                        }
-                    )
-    return pd.DataFrame(linhas, columns=["localidade_id", "localidade", "ano", "valor"])
+    if bruto.empty:
+        return pd.DataFrame(columns=["localidade_id", "localidade", "ano", "valor"])
+
+    rotulos = bruto.iloc[0]
+    dados = bruto.iloc[1:]
+
+    col_ano = None
+    col_territorio = None
+    for codigo in bruto.columns:
+        if not (codigo.startswith("D") and codigo.endswith("N")):
+            continue
+        rotulo = str(rotulos[codigo])
+        if rotulo == "Ano":
+            col_ano = codigo
+        elif rotulo not in ("Variável", "Ano"):
+            col_territorio = codigo
+    if col_ano is None or col_territorio is None:
+        raise ValueError(
+            "Retorno da SIDRA sem dimensão 'Ano' e/ou território reconhecível "
+            f"(rótulos: {[str(rotulos[c]) for c in bruto.columns]})."
+        )
+
+    return pd.DataFrame(
+        {
+            "localidade_id": dados[col_territorio.replace("N", "C")].values,
+            "localidade": dados[col_territorio].values,
+            "ano": dados[col_ano].astype(int).values,
+            "valor": pd.to_numeric(dados["V"], errors="coerce").values,
+        }
+    )
 
 
 def interpolar_anos_faltantes(df: pd.DataFrame, anos: list[int]) -> pd.DataFrame:

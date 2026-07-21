@@ -78,4 +78,49 @@ pequenas é esperado quando a emenda financia uma instituição federal que
 atende além da própria UF; o indicador serve para orientar comparação
 entre pares, não para concluir desvio.
 
-Figuras: `figuras/09_per_capita_nacional.png`, `figuras/10_emendas_per_capita_uf.png`.
+## 3. Emendas por PIB da UF (2014–2023 acumulado)
+
+Método: `valorPago` nominal acumulado na janela ÷ PIB nominal acumulado
+(SIDRA 5938, preços correntes — ambos nominais nos mesmos anos, a
+inflação afeta numerador e denominador igualmente); resultado em R$ de
+emenda por R$ 1 milhão de PIB; mesmo z-score robusto e limiar do
+cruzamento 2. A janela é menor que 2014–2025 porque as Contas Regionais
+têm defasagem de ~2 anos.
+
+| sigla_uf   |   valor_pago_mi |   n_emendas |   emendas_por_milhao_pib |   zscore_robusto | flag_atipico   |
+|:-----------|----------------:|------------:|-------------------------:|-----------------:|:---------------|
+| AC         |           15.71 |          48 |                    90.36 |            12.39 | True           |
+| AP         |           10.89 |          86 |                    59.97 |             7.91 | True           |
+| RJ         |          327.00 |         448 |                    39.83 |             4.94 | True           |
+| RN         |           16.76 |         101 |                    23.25 |             2.50 | False          |
+| PA         |           29.89 |         153 |                    16.08 |             1.45 | False          |
+| SE         |            7.32 |          34 |                    15.99 |             1.43 | False          |
+| RR         |            2.12 |          29 |                    14.02 |             1.14 | False          |
+| DF         |           37.05 |          67 |                    13.88 |             1.12 | False          |
+| TO         |            5.70 |          41 |                    13.78 |             1.11 | False          |
+| MA         |           13.45 |          50 |                    12.85 |             0.97 | False          |
+| MS         |           14.32 |          33 |                    12.14 |             0.86 | False          |
+| BA         |           32.35 |         146 |                    10.55 |             0.63 | False          |
+| MG         |           47.64 |         227 |                     6.96 |             0.10 | False          |
+| GO         |           14.20 |          88 |                     6.27 |             0.00 | False          |
+| PB         |            4.03 |          83 |                     5.81 |            -0.07 | False          |
+| ES         |            6.82 |          31 |                     4.66 |            -0.24 | False          |
+| RO         |            1.85 |          18 |                     3.71 |            -0.38 | False          |
+| CE         |            5.99 |          88 |                     3.59 |            -0.40 | False          |
+| AM         |            3.78 |          34 |                     3.38 |            -0.43 | False          |
+| AL         |            1.59 |          24 |                     2.61 |            -0.54 | False          |
+| PR         |           12.03 |         155 |                     2.52 |            -0.55 | False          |
+| MT         |            4.04 |          16 |                     2.41 |            -0.57 | False          |
+| SC         |            7.18 |          60 |                     2.11 |            -0.61 | False          |
+| PE         |            3.42 |         115 |                     1.73 |            -0.67 | False          |
+| SP         |           40.90 |         177 |                     1.69 |            -0.67 | False          |
+| PI         |            0.82 |          43 |                     1.52 |            -0.70 | False          |
+| RS         |            6.45 |         118 |                     1.34 |            -0.73 | False          |
+
+UFs atípicas por PIB: AC, AP, RJ. A normalização por PIB controla o efeito "UF pequena" da
+normalização per capita: UFs que permanecem atípicas nos DOIS
+denominadores concentram emendas além do que tamanho populacional OU
+econômico explicam.
+
+Figuras: `figuras/09_per_capita_nacional.png`,
+`figuras/10_emendas_per_capita_uf.png`, `figuras/11_emendas_por_pib_uf.png`.

@@ -8,21 +8,35 @@ possibilidade de enriquecimento por outros conjuntos do próprio portal
 
 ## Estrutura atual
 ```
-pyproject.toml            # Projeto gerenciado por uv (dependências + dev: ruff, pytest)
-coletar_despesas.py       # CLI fino (argparse + orquestração), importa de src/sucuri/
+pyproject.toml            # Projeto uv (dependências + grupos dev: ruff/pytest; painel: flask)
+coletar_despesas.py       # CLI fino (argparse + orquestração), com --incremental
 src/sucuri/
   api.py                   # Cliente da API do Portal da Transparência
   features.py               # Engenharia de variáveis e construção dos painéis A/B
+  deflacao.py               # Deflacionamento pelo IPCA (índice encadeado)
+  incremental.py            # Recoleta incremental: só anos ausentes/em aberto
+  ibge.py                   # Coleta IBGE via sidrapy (SIDRA 6579/5938) + extrair_uf
+  outliers.py               # Isolation Forest + LOF, ranks globais
+  tendencias.py             # Theil–Sen, resíduos robustos, eventos de desvio
+  benford.py                # Testes de 1º/2º dígito (qui-quadrado + MAD de Nigrini)
+  graficos.py               # Paleta e estilo matplotlib compartilhados
   persistencia.py           # Salvamento de CSV/Parquet/JSON bruto e dicionário
-  utils.py                  # brl_para_float, razao_segura, classificar_instituicao
+  utils.py                  # brl_para_float, razao_segura, classificar_instituicao,
+                            #   zscore_robusto, sigla_instituicao (siglas p/ gráficos)
+  coletores/                # Fase 3: contratos, licitacoes, sancoes, convenios,
+                            #   cartoes, emendas, documentos
+painel/                    # Painel Flask local (app.py + templates/), somente leitura
+                           #   de dados/; rodar: uv run --group painel python painel/app.py
 tests/                     # Testes unitários (pytest) das funções de src/sucuri/
 analises/                  # Scripts de análise por fase do ROADMAP (analises/NN_nome.py)
 dados/
   despesas_ensino_superior.{csv,parquet}   # Conjunto A: funcional-programático
   despesas_por_instituicao.{csv,parquet}   # Conjunto B: por órgão do MEC
+  *_real.* / *_v2.*                        # Estágios do pipeline (usar _v2 nas análises)
+  casos_priorizados.csv, eventos_series.csv, *_scores.parquet  # Saídas das Fases 2
   DICIONARIO.md                            # Dicionário de dados (gerado pelo coletor)
   raw/*.json                               # Respostas brutas da API (com carimbo de data)
-  externos/                                # Dados baixados manualmente (ver EXTERNAL.md)
+  externos/                                # IPCA, população/PIB do IBGE, downloads manuais
 relatorios/
   RELATORIO.md              # Relatório consolidado em Markdown — ver seção abaixo
   latex/relatorios.tex       # Mesmo relatório em LaTeX + relatorios.pdf compilado
@@ -75,7 +89,16 @@ EXTERNAL.md                 # Ações externas: chave de API, downloads manuais,
 - Dados tratados: salvar sempre CSV + Parquet em `dados/`; brutos em
   `dados/raw/` com carimbo `_YYYYMMDD`.
 - Recoletar dados: `uv run python coletar_despesas.py`
-  (opções: `--ano-inicio`, `--ano-fim`, `--somente funcional|instituicao`).
+  (opções: `--ano-inicio`, `--ano-fim`, `--somente funcional|instituicao`,
+  `--incremental` — reusa o bruto mais recente e só recoleta anos ausentes
+  ou em aberto; rotina mensal completa em EXTERNAL.md, item X1b).
+- Dados do IBGE (população e PIB por UF): coletados via **sidrapy** (API
+  SIDRA, pública, sem chave) por `analises/00b_baixar_ibge.py` →
+  `dados/externos/ibge_*.csv`. População de 2022–2023 é interpolada
+  (marcada em `interpolado`) — propagar essa ressalva em qualquer análise.
+- Painel local: Flask (grupo `painel`), gráficos matplotlib server-side em
+  base64; não recalcula estatísticas — só lê os artefatos de `dados/`.
+  Instituições em gráficos: usar `sucuri.utils.sigla_instituicao`.
 
 ## Registro de análises e relatórios
 

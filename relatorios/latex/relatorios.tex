@@ -1037,6 +1037,78 @@ permanecem bloqueadas aguardando os insumos manuais E3--E5 (EXTERNAL.md).
 O projeto está em estado de manutenção: rotina mensal X1b + investigação
 manual dos top casos quando os insumos externos chegarem.
 
+\section{Atualizações de 2026-07-21 (pedidos do usuário, pós-Fase 5)}
+
+Três mudanças pedidas pelo usuário após o fechamento das seções
+anteriores; onde o texto abaixo divergir delas, esta seção prevalece.
+
+\subsection*{(a) Coleta do IBGE migrada para sidrapy + PIB por UF}
+
+A coleta da tarefa 4.4 passou a usar a biblioteca \textbf{sidrapy}
+(wrapper da API SIDRA do IBGE; mesma fonte oficial, mesma ausência de
+chave). Os CSVs de população saem \textbf{idênticos} aos da implementação
+anterior --- nenhuma análise anterior muda. A normalização do retorno da
+SIDRA (\texttt{sucuri.ibge.normalizar\_sidra}) identifica as dimensões
+pelos rótulos da primeira linha, não por posição (a ordem das colunas
+D1/D2/D3 varia por tabela); coberto por teste. Foi adicionada a
+\textbf{tabela 5938} (Contas Regionais: PIB por UF a preços correntes,
+variável 37) $\rightarrow$ \texttt{dados/externos/ibge\_pib\_uf.csv}
+(2014--2023; defasagem de ${\sim}$2 anos, ressalva propagada).
+
+\subsection*{(b) Novo cruzamento: emendas por PIB da UF}
+
+\textbf{Método:} \texttt{valorPago} nominal das emendas (tarefa 3.7)
+acumulado na janela comum com o PIB (2014--2023) dividido pelo PIB
+nominal acumulado da UF na mesma janela (ambos nominais nos mesmos anos
+--- a inflação afeta numerador e denominador igualmente); resultado em
+R\$ de emenda por R\$~1 milhão de PIB; z-score robusto
+$0{,}6745\cdot(x-\mathrm{mediana})/\mathrm{MAD}$ entre as 27 UFs, limiar
+$|z| > 3{,}5$.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrr}
+\toprule
+UF & R\$ de emenda / R\$ 1 mi de PIB & z-score robusto \\
+\midrule
+AC & 90,36 & \textbf{12,39} \\
+AP & 59,97 & \textbf{7,91} \\
+RJ & 39,83 & \textbf{4,94} \\
+(mediana das 27 UFs) & 6,27 & 0 \\
+\bottomrule
+\end{tabular}
+\caption{Emendas pagas por PIB da UF, acumulado 2014--2023 --- UFs acima do limiar.}
+\end{table}
+
+\textbf{Interpretação:} a normalização por PIB controla o efeito ``UF
+pequena'' da normalização per capita. \textbf{AC, AP e RJ permanecem
+atípicas nos dois denominadores} --- concentram emendas da subfunção 364
+além do que tamanho populacional OU econômico explicam; o DF sai da
+lista (seu per capita alto é explicado pelo PIB alto). Ressalva de
+sempre: atipicidade $\neq$ irregularidade. Saídas:
+\texttt{dados/emendas\_por\_pib\_uf.csv} +
+\texttt{figuras/11\_emendas\_por\_pib\_uf.png}.
+
+\subsection*{(c) Painel reimplementado em Flask, com gráficos e siglas}
+
+O painel da tarefa 5.2 (originalmente Streamlit) foi
+\textbf{reimplementado em Flask} a pedido do usuário:
+\texttt{painel/app.py} + \texttt{painel/templates/}, gráficos matplotlib
+renderizados no servidor com a paleta do projeto e embutidos como PNG
+base64 --- sem CDN nem JavaScript externo. Páginas: visão geral (evolução
+anual real A/B, cartões, top 10 casos), séries por instituição (série
+real com flags, eventos Theil--Sen e ano parcial marcados; barras de
+z-score robusto e entre pares com limiares), medidas de anomalia (mapa de
+flags instituição $\times$ ano, distribuição do score IF/LOF com o corte
+do top 10\%, casos priorizados filtráveis), contratos (top fornecedores,
+HHI --- reusando \texttt{indice\_herfindahl} da Fase 3) e IBGE (per
+capita nacional e os dois rankings de emendas por UF, UFs atípicas em
+vermelho). As instituições aparecem nos gráficos pela \textbf{sigla
+oficial} (\texttt{sucuri.utils.sigla\_instituicao}, dicionário curado dos
+${\sim}$115 órgãos do Conjunto B). Rodar:
+\texttt{uv run --group painel python painel/app.py}; teste de fumaça em
+\texttt{tests/test\_painel.py}.
+
 \section*{Instrução de manutenção deste relatório}
 \addcontentsline{toc}{section}{Instrução de manutenção deste relatório}
 

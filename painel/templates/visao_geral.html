@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Visão geral</h1>
+<div class="cartoes">
+  {% for rotulo, valor in cartoes.items() %}
+  <div class="cartao"><div class="valor">{{ valor }}</div><div class="rotulo">{{ rotulo }}</div></div>
+  {% endfor %}
+</div>
+
+<figure>
+  <img src="data:image/png;base64,{{ grafico }}" alt="Evolução anual do pago real">
+  <figcaption>Total pago por ano em R$ de 2025 (IPCA), ano parcial excluído. O Conjunto B soma
+  todas as funções dos órgãos do MEC; o Conjunto A é só a subfunção 364 — ver CLAUDE.md.</figcaption>
+</figure>
+
+<h2>Top 10 casos priorizados (tarefa 2.5 — sinais concordantes primeiro)</h2>
+<div class="tabela-rolavel">
+<table>
+  <tr><th>Conjunto</th><th>Entidade</th><th class="num">Ano</th><th class="num">Pago real</th>
+      <th class="num">Sinais</th><th>Quais sinais</th></tr>
+  {% for c in top_casos %}
+  <tr>
+    <td>{{ c.conjunto }}</td><td>{{ c.entidade }}</td><td class="num">{{ c.ano }}</td>
+    <td class="num">{{ "R$ {:,.0f}".format(c.pago_real).replace(",", ".") }}</td>
+    <td class="num">{{ c.n_sinais }}</td><td>{{ c.sinais }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+<p><a href="{{ url_for('anomalias') }}">Ver todos os casos e medidas de anomalia →</a></p>
+{% endblock %}

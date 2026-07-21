@@ -1,53 +1,110 @@
-"""Testes das utilidades de cruzamento com o IBGE (sucuri.ibge) e do
-z-score robusto transversal (sucuri.utils.zscore_robusto)."""
+"""Testes das utilidades de cruzamento com o IBGE (sucuri.ibge) e dos
+utilitários transversais de sucuri.utils (zscore_robusto, sigla_instituicao)."""
 
 import pandas as pd
 import pytest
 
-from sucuri.ibge import extrair_series, extrair_uf, interpolar_anos_faltantes
-from sucuri.utils import zscore_robusto
-
-PAYLOAD_EXEMPLO = [
-    {
-        "id": "9324",
-        "variavel": "População residente estimada",
-        "unidade": "Pessoas",
-        "resultados": [
-            {
-                "classificacoes": [],
-                "series": [
-                    {
-                        "localidade": {"id": "1", "nivel": {"id": "N1"}, "nome": "Brasil"},
-                        "serie": {"2024": "212583750", "2025": "213421037"},
-                    },
-                    {
-                        "localidade": {"id": "35", "nivel": {"id": "N3"}, "nome": "São Paulo"},
-                        "serie": {"2024": "45973194", "2025": "-"},
-                    },
-                ],
-            }
-        ],
-    }
-]
+from sucuri.ibge import extrair_uf, interpolar_anos_faltantes, normalizar_sidra
+from sucuri.utils import sigla_instituicao, zscore_robusto
 
 
-# ---------------------------------------------------------------- extrair_series
-def test_extrair_series_achata_payload():
-    df = extrair_series(PAYLOAD_EXEMPLO)
-    assert len(df) == 4
-    brasil_2025 = df[(df["localidade"] == "Brasil") & (df["ano"] == 2025)]
-    assert brasil_2025["valor"].iloc[0] == 213421037
+def montar_retorno_sidra(colunas_dimensao: dict[str, tuple[str, list[str]]],
+                         valores: list[str]) -> pd.DataFrame:
+    """Monta um DataFrame com a estrutura do sidrapy: linha 0 = rótulos das
+    colunas, demais linhas = dados. `colunas_dimensao` mapeia o par D#C/D#N
+    para (rótulo, lista de valores da coluna N)."""
+    n = len(valores)
+    dados = {"NC": ["Nível Territorial (Código)"] + ["3"] * n, "V": ["Valor"] + valores}
+    for codigo_n, (rotulo, valores_n) in colunas_dimensao.items():
+        codigo_c = codigo_n.replace("N", "C")
+        dados[codigo_c] = [f"{rotulo} (Código)"] + [str(i) for i in range(1, n + 1)]
+        dados[codigo_n] = [rotulo] + valores_n
+    return pd.DataFrame(dados)
 
 
-def test_extrair_series_marcador_nao_numerico_vira_nan():
-    df = extrair_series(PAYLOAD_EXEMPLO)
-    sp_2025 = df[(df["localidade"] == "São Paulo") & (df["ano"] == 2025)]
-    assert pd.isna(sp_2025["valor"].iloc[0])
+# --------------------------------------------------------------- normalizar_sidra
+def test_normalizar_sidra_identifica_dimensoes_pelos_rotulos():
+    bruto = montar_retorno_sidra(
+        {
+            "D1N": ("Unidade da Federação", ["Rondônia", "Rondônia"]),
+            "D2N": ("Ano", ["2014", "2015"]),
+            "D3N": ("Variável", ["PIB", "PIB"]),
+        },
+        ["100", "110"],
+    )
+    df = normalizar_sidra(bruto)
+    assert list(df.columns) == ["localidade_id", "localidade", "ano", "valor"]
+    assert df["ano"].tolist() == [2014, 2015]
+    assert df["valor"].tolist() == [100.0, 110.0]
+    assert df["localidade"].tolist() == ["Rondônia", "Rondônia"]
 
 
-def test_extrair_series_payload_vazio():
-    df = extrair_series([])
+def test_normalizar_sidra_ordem_de_dimensoes_diferente():
+    # A ordem dos pares D# varia por tabela — o ano pode vir em D1.
+    bruto = montar_retorno_sidra(
+        {
+            "D1N": ("Ano", ["2020"]),
+            "D2N": ("Brasil", ["Brasil"]),
+            "D3N": ("Variável", ["População"]),
+        },
+        ["212000000"],
+    )
+    df = normalizar_sidra(bruto)
+    assert df["localidade"].iloc[0] == "Brasil"
+    assert df["ano"].iloc[0] == 2020
+
+
+def test_normalizar_sidra_marcador_nao_numerico_vira_nan():
+    bruto = montar_retorno_sidra(
+        {
+            "D1N": ("Unidade da Federação", ["São Paulo", "São Paulo"]),
+            "D2N": ("Ano", ["2024", "2025"]),
+            "D3N": ("Variável", ["Pop", "Pop"]),
+        },
+        ["45973194", "-"],
+    )
+    df = normalizar_sidra(bruto)
+    assert df["valor"].iloc[0] == 45973194.0
+    assert pd.isna(df["valor"].iloc[1])
+
+
+def test_normalizar_sidra_vazio():
+    df = normalizar_sidra(pd.DataFrame())
     assert df.empty and list(df.columns) == ["localidade_id", "localidade", "ano", "valor"]
+
+
+def test_normalizar_sidra_sem_dimensao_ano_levanta_erro():
+    bruto = montar_retorno_sidra(
+        {"D1N": ("Unidade da Federação", ["Acre"]), "D2N": ("Variável", ["Pop"])},
+        ["800000"],
+    )
+    with pytest.raises(ValueError):
+        normalizar_sidra(bruto)
+
+
+# --------------------------------------------------------------- sigla_instituicao
+def test_sigla_instituicao_universidades_conhecidas():
+    assert sigla_instituicao("Universidade Federal Fluminense") == "UFF"
+    assert sigla_instituicao("Fundação Universidade Federal do Vale do São Francisco") == "UNIVASF"
+    assert sigla_instituicao("Universidade Federal do Estado do Rio de Janeiro") == "UNIRIO"
+    assert sigla_instituicao("Universidade Federal do Rio Grande") == "FURG"
+
+
+def test_sigla_instituicao_nao_universidades():
+    assert sigla_instituicao("Empresa Brasileira de Serviços Hospitalares") == "EBSERH"
+    assert (
+        sigla_instituicao("Fundação Coordenação de Aperfeiçoamento de Pessoal de Nível Superior")
+        == "CAPES"
+    )
+
+
+def test_sigla_instituicao_nome_desconhecido_volta_como_veio():
+    assert sigla_instituicao("Órgão Novo Qualquer") == "Órgão Novo Qualquer"
+
+
+def test_sigla_instituicao_nulo_ou_vazio():
+    assert sigla_instituicao(None) == ""
+    assert sigla_instituicao("") == ""
 
 
 # ------------------------------------------------------ interpolar_anos_faltantes

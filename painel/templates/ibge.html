@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Cruzamentos com o IBGE (tarefa 4.4 — via sidrapy/SIDRA)</h1>
+
+<h2>Despesa real per capita — subfunção 364, Brasil</h2>
+<figure>
+  <img src="data:image/png;base64,{{ grafico_per_capita }}" alt="Per capita nacional">
+  <figcaption>Pago real anual (Conjunto A, ano parcial excluído) ÷ população estimada
+  (SIDRA tabela 6579). A trajetória em U persiste per capita; 2025 segue ~19% abaixo
+  do pico de 2015.</figcaption>
+</figure>
+
+<h2>Emendas parlamentares por UF — dois denominadores</h2>
+<div style="display:flex; gap:1rem; flex-wrap:wrap;">
+  <figure style="flex:1; min-width:320px;">
+    <img src="data:image/png;base64,{{ grafico_uf }}" alt="Emendas per capita por UF">
+    <figcaption>Per capita (população média 2014–2025).
+    Atípicas: <strong>{{ atipicas_capita }}</strong>.</figcaption>
+  </figure>
+  <figure style="flex:1; min-width:320px;">
+    <img src="data:image/png;base64,{{ grafico_pib }}" alt="Emendas por PIB da UF">
+    <figcaption>Por PIB (SIDRA tabela 5938, janela comum com as Contas Regionais).
+    Atípicas: <strong>{{ atipicas_pib }}</strong>.</figcaption>
+  </figure>
+</div>
+<p style="font-size:0.82rem;color:var(--tinta2)">UFs atípicas nos <strong>dois</strong>
+denominadores concentram emendas além do que tamanho populacional OU econômico explicam —
+candidatas naturais a drill-down. Per capita alto isolado em UF pequena pode só refletir
+uma instituição federal que atende além da própria UF.</p>
+{% endblock %}

@@ -12,12 +12,20 @@ como denominador para dois cruzamentos com o Portal da Transparência:
 2. **Emendas parlamentares per capita por UF** (tarefa 3.7): `valorPago`
    deflacionado (IPCA, mesmo ano-base do projeto) acumulado 2014–2025 por UF
    ÷ população média da UF no período, com z-score robusto entre as 27 UFs.
+3. **Emendas por PIB da UF** (tabela SIDRA 5938): `valorPago` nominal
+   acumulado na janela coberta pelas Contas Regionais ÷ PIB nominal acumulado
+   da UF na mesma janela (ambos nominais nos mesmos anos — a inflação afeta
+   numerador e denominador igualmente), com o mesmo z-score robusto.
+   Controla o efeito "UF pequena": normaliza pelo tamanho da economia, não
+   da população.
 
 Ressalvas herdadas dos insumos (sempre reportadas, nunca implícitas):
 - População de 2022–2023 é interpolada (sem estimativa publicada no 6579);
+- PIB (Contas Regionais) tem defasagem de ~2 anos — o cruzamento 3 usa a
+  janela comum emendas ∩ PIB, menor que 2014–2025;
 - Emendas sem UF atribuível ("Nacional", regiões, "MÚLTIPLO") ficam fora do
   rateio por UF e são quantificadas no relatório;
-- Ano parcial (2026) não entra em nenhuma das duas séries.
+- Ano parcial (2026) não entra em nenhuma das séries.
 
 Uso:
     uv run python analises/14_ibge_cruzamento.py
@@ -102,6 +110,30 @@ def emendas_per_capita_uf(pop_uf: pd.DataFrame, ano_base: int) -> tuple[pd.DataF
     return por_uf, contexto
 
 
+def emendas_por_pib_uf(pib_uf: pd.DataFrame) -> tuple[pd.DataFrame, tuple[int, int]]:
+    df = pd.read_parquet(DIR_DADOS / "emendas_educacao.parquet")
+    df["sigla_uf"] = df["localidadeDoGasto"].map(extrair_uf)
+    atribuiveis = df.dropna(subset=["sigla_uf"])
+
+    janela = (int(atribuiveis["ano"].min()), int(pib_uf["ano"].max()))
+    na_janela = atribuiveis[atribuiveis["ano"].between(*janela)]
+    pib_janela = pib_uf[pib_uf["ano"].between(*janela)]
+
+    por_uf = (
+        na_janela.groupby("sigla_uf")
+        .agg(valor_pago_nominal=("valorPago", "sum"), n_emendas=("valorPago", "size"))
+        .join(pib_janela.groupby("sigla_uf")["pib_mil_reais"].sum().rename("pib_mil_reais"))
+        .reset_index()
+    )
+    # R$ de emenda por R$ 1 milhão de PIB acumulado na mesma janela.
+    por_uf["emendas_por_milhao_pib"] = por_uf["valor_pago_nominal"] / (
+        por_uf["pib_mil_reais"] * 1_000 / 1e6
+    )
+    por_uf["zscore_robusto"] = zscore_robusto(por_uf["emendas_por_milhao_pib"])
+    por_uf["flag_atipico"] = por_uf["zscore_robusto"].abs() > LIMIAR_ZSCORE_ROBUSTO
+    return por_uf.sort_values("emendas_por_milhao_pib", ascending=False).reset_index(drop=True), janela
+
+
 def figura_per_capita_nacional(serie: pd.DataFrame) -> None:
     fig, ax = plt.subplots(figsize=(8, 4.5))
     ax.plot(serie["ano"], serie["per_capita_real"], color=COR_SEQUENCIAL, marker="o")
@@ -124,8 +156,18 @@ def figura_emendas_uf(por_uf: pd.DataFrame) -> None:
     salvar_figura(fig, DIR_FIGURAS / "10_emendas_per_capita_uf.png")
 
 
+def figura_emendas_pib(por_pib: pd.DataFrame, janela: tuple[int, int]) -> None:
+    fig, ax = plt.subplots(figsize=(8, 7))
+    dados = por_pib.sort_values("emendas_por_milhao_pib")
+    ax.barh(dados["sigla_uf"], dados["emendas_por_milhao_pib"], color=COR_SEQUENCIAL)
+    ax.set_xlabel(f"R$ de emenda por R$ 1 milhão de PIB ({janela[0]}–{janela[1]})")
+    ax.set_title("Emendas parlamentares pagas — subfunção 364, por PIB da UF")
+    salvar_figura(fig, DIR_FIGURAS / "11_emendas_por_pib_uf.png")
+
+
 def gerar_relatorio(serie: pd.DataFrame, por_uf: pd.DataFrame, contexto: dict,
-                    ano_base: int) -> str:
+                    ano_base: int, por_pib: pd.DataFrame,
+                    janela_pib: tuple[int, int]) -> str:
     pct_nao_atrib = 100 * contexto["valor_nao_atribuivel_real"] / contexto["valor_total_real"]
     pico = serie.loc[serie["per_capita_real"].idxmax()]
     piso = serie.loc[serie["per_capita_real"].idxmin()]
@@ -191,7 +233,29 @@ def gerar_relatorio(serie: pd.DataFrame, por_uf: pd.DataFrame, contexto: dict,
         "atende além da própria UF; o indicador serve para orientar comparação",
         "entre pares, não para concluir desvio.",
         "",
-        "Figuras: `figuras/09_per_capita_nacional.png`, `figuras/10_emendas_per_capita_uf.png`.",
+        f"## 3. Emendas por PIB da UF ({janela_pib[0]}–{janela_pib[1]} acumulado)",
+        "",
+        "Método: `valorPago` nominal acumulado na janela ÷ PIB nominal acumulado",
+        "(SIDRA 5938, preços correntes — ambos nominais nos mesmos anos, a",
+        "inflação afeta numerador e denominador igualmente); resultado em R$ de",
+        "emenda por R$ 1 milhão de PIB; mesmo z-score robusto e limiar do",
+        "cruzamento 2. A janela é menor que 2014–2025 porque as Contas Regionais",
+        "têm defasagem de ~2 anos.",
+        "",
+        por_pib.assign(valor_pago_mi=lambda d: d["valor_pago_nominal"] / 1e6)[
+            ["sigla_uf", "valor_pago_mi", "n_emendas", "emendas_por_milhao_pib",
+             "zscore_robusto", "flag_atipico"]
+        ].to_markdown(index=False, floatfmt=(".0f", ".2f", ".0f", ".2f", ".2f")),
+        "",
+        "UFs atípicas por PIB: "
+        + (", ".join(por_pib.loc[por_pib["flag_atipico"], "sigla_uf"]) or "nenhuma")
+        + ". A normalização por PIB controla o efeito \"UF pequena\" da",
+        "normalização per capita: UFs que permanecem atípicas nos DOIS",
+        "denominadores concentram emendas além do que tamanho populacional OU",
+        "econômico explicam.",
+        "",
+        "Figuras: `figuras/09_per_capita_nacional.png`,",
+        "`figuras/10_emendas_per_capita_uf.png`, `figuras/11_emendas_por_pib_uf.png`.",
     ]
     return "\n".join(linhas) + "\n"
 
@@ -201,16 +265,20 @@ def main() -> None:
     ano_base = ultimo_ano_completo()
     pop_br = carregar_populacao("ibge_populacao_brasil.csv")
     pop_uf = carregar_populacao("ibge_populacao_uf.csv")
+    pib_uf = carregar_populacao("ibge_pib_uf.csv")
 
     serie = per_capita_nacional(pop_br)
     por_uf, contexto = emendas_per_capita_uf(pop_uf, ano_base)
+    por_pib, janela_pib = emendas_por_pib_uf(pib_uf)
 
     serie.to_csv(DIR_DADOS / "per_capita_nacional.csv", index=False)
     por_uf.to_csv(DIR_DADOS / "emendas_per_capita_uf.csv", index=False)
+    por_pib.to_csv(DIR_DADOS / "emendas_por_pib_uf.csv", index=False)
     figura_per_capita_nacional(serie)
     figura_emendas_uf(por_uf)
+    figura_emendas_pib(por_pib, janela_pib)
 
-    relatorio = gerar_relatorio(serie, por_uf, contexto, ano_base)
+    relatorio = gerar_relatorio(serie, por_uf, contexto, ano_base, por_pib, janela_pib)
     (DIR_RELATORIOS / "14_ibge.md").write_text(relatorio, encoding="utf-8")
     print(relatorio)
 

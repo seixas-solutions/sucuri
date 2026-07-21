@@ -1,17 +1,21 @@
-"""Baixa a população residente estimada do IBGE (Brasil e por UF) para
-cruzamento com os dados do Portal da Transparência.
+"""Baixa dados do IBGE via sidrapy (API SIDRA) para cruzamento com os dados
+do Portal da Transparência.
 
-Fonte: API de agregados do IBGE (servicodados), agregado 6579, variável 9324
-— pública, sem chave, sem relação com `GOVBR_API_KEY`. Ver `sucuri.ibge`.
+Fonte: API SIDRA do IBGE via biblioteca `sidrapy` — pública, sem chave, sem
+relação com `GOVBR_API_KEY`. Ver `sucuri.ibge`.
 
 Saídas (dados/externos/, mesmo padrão do IPCA em 00_baixar_ipca.py):
-- ibge_populacao_brasil.csv  (ano, populacao, interpolado)
+- ibge_populacao_brasil.csv  (ano, populacao, interpolado)        [tabela 6579]
 - ibge_populacao_uf.csv      (ano, sigla_uf, uf, populacao, interpolado)
+- ibge_pib_uf.csv            (ano, sigla_uf, uf, pib_mil_reais)   [tabela 5938]
 
-A série de estimativas tem lacunas nos anos de Censo (2022) e em anos sem
-estimativa publicada (ex.: 2023): esses anos são preenchidos por interpolação
-linear entre os vizinhos e marcados com `interpolado=True` — toda análise
-que os use deve carregar essa ressalva.
+Ressalvas estruturais das fontes (propagadas às análises):
+- População: anos de Censo/transição (2022, 2023) não têm estimativa
+  publicada na tabela 6579 — preenchidos por interpolação linear entre os
+  vizinhos e marcados com `interpolado=True`.
+- PIB (Contas Regionais): publicado com defasagem de ~2 anos — a série vai
+  só até o último ano disponível (hoje 2022), sem interpolação (não faz
+  sentido interpolar o fim da série).
 """
 
 from __future__ import annotations
@@ -19,14 +23,17 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import pandas as pd
+
 from sucuri.ibge import (
-    AGREGADO_POPULACAO,
     NIVEL_BRASIL,
     NIVEL_UF,
     SIGLA_POR_NOME_UF,
+    TABELA_PIB_UF,
+    TABELA_POPULACAO,
+    VARIAVEL_PIB,
     VARIAVEL_POPULACAO,
-    consultar_agregado,
-    extrair_series,
+    coletar_tabela_sidra,
     interpolar_anos_faltantes,
 )
 
@@ -39,37 +46,58 @@ ANO_FIM = 2025
 DIR_SAIDA = Path("dados/externos")
 
 
-def main() -> None:
+def adicionar_sigla_uf(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.rename(columns={"localidade": "uf"})
+    df["sigla_uf"] = df["uf"].str.upper().map(SIGLA_POR_NOME_UF)
+    return df
+
+
+def baixar_populacao() -> None:
     anos = list(range(ANO_INICIO, ANO_FIM + 1))
-    DIR_SAIDA.mkdir(parents=True, exist_ok=True)
+    periodo = f"{ANO_INICIO}-{ANO_FIM}"
 
     for nivel, nome_arquivo in [
         (NIVEL_BRASIL, "ibge_populacao_brasil.csv"),
         (NIVEL_UF, "ibge_populacao_uf.csv"),
     ]:
-        log.info("Consultando agregado %s (%s) para %s–%s ...",
-                 AGREGADO_POPULACAO, nivel, ANO_INICIO, ANO_FIM)
-        payload = consultar_agregado(AGREGADO_POPULACAO, VARIAVEL_POPULACAO, anos, nivel=nivel)
-        df = extrair_series(payload)
-        anos_obtidos = sorted(df["ano"].unique())
-        faltantes = sorted(set(anos) - set(anos_obtidos))
+        log.info("SIDRA tabela %s (população, nível %s), %s ...",
+                 TABELA_POPULACAO, nivel, periodo)
+        df = coletar_tabela_sidra(TABELA_POPULACAO, VARIAVEL_POPULACAO, periodo, nivel=nivel)
+        faltantes = sorted(set(anos) - set(df["ano"].unique()))
         if faltantes:
             log.info("Anos sem estimativa publicada %s — interpolação linear "
                      "(marcada em 'interpolado').", faltantes)
-        df = interpolar_anos_faltantes(df, anos)
-        df = df.rename(columns={"valor": "populacao", "localidade": "uf"})
+        df = interpolar_anos_faltantes(df, anos).rename(columns={"valor": "populacao"})
 
         if nivel == NIVEL_UF:
-            df["sigla_uf"] = df["uf"].str.upper().map(SIGLA_POR_NOME_UF)
+            df = adicionar_sigla_uf(df)
             df = df[["ano", "sigla_uf", "uf", "populacao", "interpolado"]]
+            df = df.sort_values(["ano", "sigla_uf"])
         else:
-            df = df[["ano", "populacao", "interpolado"]]
+            df = df[["ano", "populacao", "interpolado"]].sort_values("ano")
 
-        df = df.sort_values(["ano"] + (["sigla_uf"] if nivel == NIVEL_UF else [])).reset_index(drop=True)
         caminho = DIR_SAIDA / nome_arquivo
-        df.to_csv(caminho, index=False)
+        df.reset_index(drop=True).to_csv(caminho, index=False)
         log.info("Salvo %s (%d linhas, %d interpoladas).",
                  caminho, len(df), int(df["interpolado"].sum()))
+
+
+def baixar_pib_uf() -> None:
+    periodo = f"{ANO_INICIO}-{ANO_FIM}"
+    log.info("SIDRA tabela %s (PIB por UF, preços correntes), %s ...", TABELA_PIB_UF, periodo)
+    df = coletar_tabela_sidra(TABELA_PIB_UF, VARIAVEL_PIB, periodo, nivel=NIVEL_UF)
+    df = adicionar_sigla_uf(df).rename(columns={"valor": "pib_mil_reais"})
+    df = df[["ano", "sigla_uf", "uf", "pib_mil_reais"]].sort_values(["ano", "sigla_uf"])
+    caminho = DIR_SAIDA / "ibge_pib_uf.csv"
+    df.reset_index(drop=True).to_csv(caminho, index=False)
+    log.info("Salvo %s (%d linhas, %d–%d — Contas Regionais têm defasagem de ~2 anos).",
+             caminho, len(df), int(df["ano"].min()), int(df["ano"].max()))
+
+
+def main() -> None:
+    DIR_SAIDA.mkdir(parents=True, exist_ok=True)
+    baixar_populacao()
+    baixar_pib_uf()
 
 
 if __name__ == "__main__":

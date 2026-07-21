@@ -260,18 +260,23 @@ Se ausentes, pular a tarefa e sinalizar.
   ausente — depende da consulta manual E5 (EXTERNAL.md; priorizar a Fundação
   Euclides da Cunha/UFF, atípica em 3 tarefas independentes da Fase 3).
 
-- [x] **4.4 Cruzamento com a população do IBGE** — concluída em 2026-07-21
+- [x] **4.4 Cruzamento com dados do IBGE** — concluída em 2026-07-21
   (tarefa adicionada por pedido do usuário: incluir uma API do IBGE para
-  cruzar com o Portal da Transparência). `src/sucuri/ibge.py` (cliente da
-  API de agregados, pública, sem chave) + `analises/00b_baixar_ibge.py`
-  (população residente estimada, agregado 6579, Brasil e por UF, 2014–2025;
-  2022–2023 interpolados e marcados) + `analises/14_ibge_cruzamento.py`.
+  cruzar com o Portal da Transparência). `src/sucuri/ibge.py` +
+  `analises/00b_baixar_ibge.py` (população residente estimada, tabela 6579,
+  Brasil e por UF, 2014–2025; 2022–2023 interpolados e marcados) +
+  `analises/14_ibge_cruzamento.py`.
   *Aceite:* ✅ `dados/per_capita_nacional.csv` + `dados/emendas_per_capita_uf.csv`
-  + 2 figuras + `relatorios/14_ibge.md`. Achados: trajetória em U persiste
+  + figuras + `relatorios/14_ibge.md`. Achados: trajetória em U persiste
   per capita (pico 2015, piso 2021–2022); emendas per capita por UF com 4
   UFs atípicas (AC z=14,3; RJ 7,3; DF 5,6; AP 5,5; z-score robusto entre
   27 UFs). Testes em `tests/test_ibge.py`. Detalhes em
   `relatorios/RELATORIO.md`, seção V.1.
+  *Atualização 2026-07-21 (pedido do usuário):* coleta migrada para a
+  biblioteca **sidrapy** (API SIDRA; mesmos CSVs de saída) + tabela 5938
+  (PIB por UF, Contas Regionais) → novo cruzamento **emendas por PIB da
+  UF** (`dados/emendas_por_pib_uf.csv` + figura 11): AC, AP e RJ seguem
+  atípicas também por PIB (DF sai da lista). Ver seção VI.5 do relatório.
 
 ## Fase 5 — Produto final
 
@@ -283,12 +288,19 @@ Se ausentes, pular a tarefa e sinalizar.
   *Aceite:* ✅ linguagem de indício/atipicidade em todo o texto; nenhum
   número sem método declarado.
 - [x] **5.2 Painel interativo (opcional)** — concluída em 2026-07-21.
-  `painel/app.py` (Streamlit, grupo de dependências `painel`): séries por
-  instituição, mapa de flags, casos priorizados, drill-down de contratos/
-  fornecedores e cruzamentos IBGE. Rodar:
-  `uv run --group painel streamlit run painel/app.py`.
-  *Aceite:* ✅ somente leitura de `dados/` (não recalcula nada); aviso
-  metodológico fixo na barra lateral.
+  Primeira versão em Streamlit, **reimplementada em Flask no mesmo dia por
+  pedido do usuário**: `painel/app.py` + `painel/templates/` (grupo de
+  dependências `painel`), gráficos matplotlib renderizados no servidor
+  (paleta de `sucuri.graficos`, sem CDN/JS externo), instituições
+  rotuladas por **sigla** nos gráficos (`sucuri.utils.sigla_instituicao`).
+  Páginas: visão geral, séries por instituição (flags + eventos Theil–Sen
+  + z-scores), medidas de anomalia (mapa de flags, distribuição de scores
+  IF/LOF, casos priorizados), contratos/fornecedores (HHI) e cruzamentos
+  IBGE. Rodar: `uv run --group painel python painel/app.py`.
+  *Aceite:* ✅ somente leitura de `dados/` (não recalcula estatísticas;
+  única exceção: HHI reusa `sucuri.coletores.contratos.indice_herfindahl`,
+  sem duplicar fórmula); aviso metodológico fixo em todas as páginas;
+  teste de fumaça das rotas em `tests/test_painel.py`.
 - [x] **5.3 Automação da recoleta** — concluída em 2026-07-21.
   `coletar_despesas.py --incremental` + `src/sucuri/incremental.py`: reusa o
   bruto mais recente de `dados/raw/` e recoleta só anos ausentes ou com

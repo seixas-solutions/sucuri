@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Medidas de anomalia</h1>
+
+<h2>Mapa de flags por instituição × ano</h2>
+<form class="filtro" method="get">
+  <label for="tipo">Tipo de instituição:</label>
+  <select name="tipo" id="tipo">
+    {% for t in tipos %}
+    <option value="{{ t }}" {{ 'selected' if t == tipo }}>{{ t }}</option>
+    {% endfor %}
+  </select>
+  <input type="hidden" name="min_sinais" value="{{ min_sinais }}">
+  <button type="submit">Ver</button>
+</form>
+<figure>
+  <img src="data:image/png;base64,{{ grafico_mapa }}" alt="Mapa de flags">
+  <figcaption>Célula escura = alguma flag de anomalia no ano (z-score próprio, salto anual,
+  entre pares — tarefa 1.3). O ano parcial nunca gera flag por construção.</figcaption>
+</figure>
+
+<h2>Distribuição do score multivariado (IF + LOF)</h2>
+<figure>
+  <img src="data:image/png;base64,{{ grafico_scores }}" alt="Distribuição de scores">
+  <figcaption>Conjunto B. Linhas à direita do corte tracejado estão no top 10% usado como
+  sinal de outlier multivariado na consolidação de casos (tarefa 2.5).</figcaption>
+</figure>
+
+<h2>Casos priorizados ({{ n_casos }} exibidos)</h2>
+<form class="filtro" method="get">
+  <input type="hidden" name="tipo" value="{{ tipo }}">
+  <label for="min_sinais">Mínimo de sinais concordantes:</label>
+  <input type="number" name="min_sinais" id="min_sinais" min="1" max="{{ max_sinais }}"
+         value="{{ min_sinais }}">
+  <button type="submit">Filtrar</button>
+</form>
+<div class="tabela-rolavel">
+<table>
+  <tr><th>Conjunto</th><th>Entidade</th><th class="num">Ano</th><th class="num">Pago real</th>
+      <th class="num">Sinais</th><th class="num">Score</th><th>Quais sinais</th></tr>
+  {% for c in casos %}
+  <tr>
+    <td>{{ c.conjunto }}</td><td>{{ c.entidade }}</td><td class="num">{{ c.ano }}</td>
+    <td class="num">{{ "R$ {:,.0f}".format(c.pago_real).replace(",", ".") }}</td>
+    <td class="num">{{ c.n_sinais }}</td>
+    <td class="num">{{ "{:.2f}".format(c.score_combinado) }}</td>
+    <td>{{ c.sinais }}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

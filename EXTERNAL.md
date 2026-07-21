@@ -101,17 +101,18 @@ print(df[['codigoOrgao','orgao']].drop_duplicates().to_string(index=False))
   — nesse caso, montar manualmente o CSV no mesmo formato
   (`ano,ipca_acumulado_pct`) e salvar em `dados/externos/ipca_anual.csv`.
 
-### E1b. População do IBGE (pré-requisito da tarefa 4.4) — ✅ automatizado
-- **Automatizado** em `analises/00b_baixar_ibge.py`: baixa a população
-  residente estimada (Brasil e por UF) da API de agregados do IBGE
-  (`https://servicodados.ibge.gov.br/api/v3/agregados`, agregado 6579,
-  variável 9324 — pública, sem cadastro, sem relação com `GOVBR_API_KEY`)
-  e salva `dados/externos/ibge_populacao_brasil.csv` e
-  `dados/externos/ibge_populacao_uf.csv`. Anos sem estimativa publicada
-  (2022, 2023) são interpolados linearmente e marcados em `interpolado`.
-- Cliente reutilizável em `src/sucuri/ibge.py` — outros agregados do IBGE
-  (PIB por UF: 5938; Censo 2022: 9514) podem ser consultados com
-  `consultar_agregado` sem código novo de rede.
+### E1b. Dados do IBGE via sidrapy (pré-requisito da tarefa 4.4) — ✅ automatizado
+- **Automatizado** em `analises/00b_baixar_ibge.py`, usando a biblioteca
+  `sidrapy` (API SIDRA do IBGE — pública, sem cadastro, sem relação com
+  `GOVBR_API_KEY`): população residente estimada (tabela 6579, variável
+  9324; Brasil e por UF) e PIB por UF a preços correntes (tabela 5938,
+  variável 37, Contas Regionais — defasagem de ~2 anos). Saídas:
+  `dados/externos/ibge_populacao_brasil.csv`, `ibge_populacao_uf.csv` e
+  `ibge_pib_uf.csv`. Anos de população sem estimativa publicada (2022,
+  2023) são interpolados linearmente e marcados em `interpolado`.
+- Coletor genérico em `src/sucuri/ibge.py` (`coletar_tabela_sidra`) —
+  outras tabelas da SIDRA (ex.: Censo 2022: 9514) podem ser consultadas
+  sem código novo de rede.
 
 ### E2. Downloads em lote do Portal da Transparência
 Para volumes grandes (despesas detalhadas por documento, CPGF completo), o

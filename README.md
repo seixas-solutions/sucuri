@@ -21,6 +21,12 @@ Dois conjuntos complementares, via API do Portal da Transparência:
   superior 26000), uma linha por instituição/ano (total do órgão, todas as
   funções — não só ensino superior).
 
+Enriquecidos por coletores adicionais do próprio portal (contratos,
+licitações, sanções CEIS/CNEP, convênios, cartões CPGF, emendas
+parlamentares — `src/sucuri/coletores/`) e por dados do IBGE via
+[sidrapy](https://pypi.org/project/sidrapy/)/API SIDRA (população e PIB
+por UF, para normalizações per capita e por PIB).
+
 Ver `dados/DICIONARIO.md` para a descrição completa de colunas de cada
 estágio do pipeline (dados originais, deflacionados, tratados).
 
@@ -28,19 +34,19 @@ estágio do pipeline (dados originais, deflacionados, tratados).
 
 ```
 coletar_despesas.py       # CLI de coleta (API -> dados/)
-src/sucuri/                # Pacote com a lógica reutilizável
-  api.py                    # Cliente da API do Portal da Transparência
-  features.py                # Engenharia de variáveis, flags de anomalia
-  deflacao.py                 # Deflacionamento de valores pelo IPCA
-  persistencia.py              # Salvamento de dados e dicionário de dados
-  utils.py                      # Conversões e classificação de instituições
-analises/                  # Scripts de análise, um por tarefa do ROADMAP
-tests/                     # Testes unitários (pytest)
-dados/                     # Dados coletados e tratados (ver dados/DICIONARIO.md)
+src/sucuri/               # Pacote com a lógica reutilizável
+  api.py                   # Cliente da API do Portal da Transparência
+  features.py              # Engenharia de variáveis, flags de anomalia
+  deflacao.py              # Deflacionamento de valores pelo IPCA
+  persistencia.py          # Salvamento de dados e dicionário de dados
+  utils.py                 # Conversões e classificação de instituições
+analises/                 # Scripts de análise, um por tarefa do ROADMAP
+tests/                    # Testes unitários (pytest)
+dados/                    # Dados coletados e tratados (ver dados/DICIONARIO.md)
 relatorios/
-  RELATORIO.md               # Relatório consolidado: métodos, resultados, interpretação
-  latex/relatorios.tex         # Mesmo relatório em LaTeX, com PDF compilado
-  01_qualidade.md, ...          # Relatórios específicos de cada tarefa
+  RELATORIO.md              # Relatório consolidado: métodos, resultados, interpretação
+  latex/relatorios.tex       # Mesmo relatório em LaTeX, com PDF compilado
+  01_qualidade.md, ...       # Relatórios específicos de cada tarefa
 ROADMAP.md                 # Plano de trabalho em fases/tarefas
 CLAUDE.md                  # Contexto do projeto para trabalho assistido por IA
 EXTERNAL.md                # O que depende de ação humana: credenciais, downloads manuais
@@ -57,26 +63,36 @@ uv run pytest                # roda os testes
 uv run ruff check .          # lint
 
 # Pipeline de dados, em ordem:
-uv run python coletar_despesas.py            # coleta bruta (requer GOVBR_API_KEY em ~/.env)
-uv run python analises/00_baixar_ipca.py      # baixa o IPCA (Banco Central, API pública)
-uv run python analises/01_qualidade.py         # relatório de qualidade dos dados
-uv run python analises/01b_deflacionar.py       # deflaciona pelo IPCA -> dados/*_real.*
+uv run python coletar_despesas.py                  # coleta bruta (requer GOVBR_API_KEY em ~/.env)
+uv run python coletar_despesas.py --incremental    # recoleta mensal: só anos novos/em aberto
+uv run python analises/00_baixar_ipca.py           # baixa o IPCA (Banco Central, API pública)
+uv run python analises/00b_baixar_ibge.py          # baixa população e PIB do IBGE (sidrapy, API pública)
+uv run python analises/01_qualidade.py             # relatório de qualidade dos dados
+uv run python analises/01b_deflacionar.py          # deflaciona pelo IPCA -> dados/*_real.*
 uv run python analises/01c_ano_parcial_e_flags.py  # trata ano parcial/duplicatas -> dados/*_v2.*
+
+# Análises (Fases 2–4): analises/02_eda.py ... analises/14_ibge_cruzamento.py
+
+# Painel interativo local (Flask), em http://localhost:5000
+uv run --group painel python painel/app.py
 ```
 
 `dados/*_v2.{csv,parquet}` é o conjunto recomendado para qualquer análise de
 anomalia — os estágios anteriores (dados originais e `*_real`) existem só
-como etapas intermediárias do pipeline (ver `dados/DICIONARIO.md`).
+como etapas intermediárias do pipeline (ver `dados/DICIONARIO.md`). A rotina
+mensal de atualização está descrita em `EXTERNAL.md` (item X1b).
 
 ## Estado atual
 
-Fases 0 (infraestrutura) e 1 (qualidade dos dados, deflação, tratamento de
-ano parcial) do `ROADMAP.md` concluídas. Detalhes de método, resultados e
-interpretação de cada tarefa em `relatorios/RELATORIO.md` (ou
-`relatorios/latex/relatorios.pdf`). Próximos passos e escopo completo
-(detecção estatística de anomalias, cruzamento com contratos/licitações/
-sanções do Portal da Transparência, validação contra fontes externas) em
-`ROADMAP.md`.
+Fases 0–3 e 5 do `ROADMAP.md` concluídas: infraestrutura, qualidade dos
+dados, detecção estatística (flags, Benford, Isolation Forest + LOF,
+Theil–Sen, consolidação de 176 casos priorizados), enriquecimento com
+contratos/licitações/sanções/convênios/CPGF/emendas, cruzamentos com o
+IBGE (per capita e por PIB), relatório executivo, painel Flask e recoleta
+incremental. Da Fase 4 restam as tarefas que dependem de downloads
+manuais (INEP, SIOP, TCU/CGU — ver `EXTERNAL.md`, itens E3–E5). Detalhes
+de método, resultados e interpretação de cada tarefa em
+`relatorios/RELATORIO.md` (ou `relatorios/latex/relatorios.pdf`).
 
 ## Ressalvas importantes
 
