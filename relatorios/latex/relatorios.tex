@@ -1109,6 +1109,86 @@ ${\sim}$115 órgãos do Conjunto B). Rodar:
 \texttt{uv run --group painel python painel/app.py}; teste de fumaça em
 \texttt{tests/test\_painel.py}.
 
+\section{Apêndice metodológico --- o que cada medida de anomalia significa}
+
+Adicionado em 2026-07-21 a pedido do usuário: definição, fórmula e leitura
+de cada medida usada nas Fases 1--4 e exibida no painel (que ganhou uma
+página ``Medidas'' com este mesmo conteúdo). O projeto usa \textbf{quatro
+famílias independentes de sinal}; nenhuma ``detecta fraude'' --- cada uma
+responde a uma pergunta estatística diferente, e um caso só ganha
+prioridade quando várias respondem ``atípico'' ao mesmo tempo.
+
+\subsection*{1. A própria história da série (z-scores temporais)}
+
+\begin{itemize}
+    \item \textbf{z-score clássico} (\texttt{zscore\_pago}):
+    $z = (x - \bar{x})/s$ (média $\bar{x}$ e desvio-padrão $s$ do
+    histórico da própria série): quantos desvios-padrão o valor do
+    ano dista da média histórica. Sob normalidade, $|z| > 3$ ocorreria em
+    menos de 0,3\% dos anos. Fraqueza: média e desvio são ``puxados''
+    pelo próprio outlier que se quer detectar.
+    \item \textbf{z-score robusto} (\texttt{zscore\_robusto\_pago}):
+    $z = 0{,}6745\cdot(x - \mathrm{mediana})/\mathrm{MAD}$, onde MAD é a
+    mediana dos desvios absolutos em torno da mediana. Mediana e MAD
+    quase não se movem com um ponto extremo --- o outlier não mascara a
+    si mesmo. O fator $0{,}6745$ calibra a escala para comparabilidade
+    com o z clássico sob normalidade; limiar $|z| > 3{,}5$.
+    \item \textbf{Salto anual} (\texttt{flag\_salto\_anual}): variação
+    real anual acima de 100\% em módulo --- mais que dobrar, ou cair para
+    menos da metade, em R\$ constantes. Sensível a rupturas de 1 ano;
+    cego para desvios graduais.
+\end{itemize}
+
+Todos sobre \texttt{pago\_real} (deflacionado), excluindo ano parcial e
+séries com menos de 5 anos (Fase 1).
+
+\subsection*{2. Os pares (\texttt{zscore\_pago\_entre\_pares})}
+
+O mesmo z-score, mas transversal: compara a instituição com as outras do
+mesmo \texttt{tipo\_instituicao} no mesmo ano. Capta ``gasta muito
+acima/abaixo dos semelhantes'' mesmo com história própria estável.
+Limiar $|z| > 3$.
+
+\subsection*{3. Combinações de variáveis (Isolation Forest + LOF)}
+
+Modelos multivariados sobre 5 variáveis simultâneas (nível real, taxas de
+liquidação/pagamento, variação anual, fração de restos a pagar):
+\textbf{Isolation Forest} (árvores de cortes aleatórios; ponto isolável
+com poucos cortes é anômalo no sentido \emph{global}) e \textbf{LOF}
+(densidade local; ponto em região ``rala'' relativa aos vizinhos é
+anômalo no sentido \emph{local}). \texttt{score\_anomalia} é a média dos
+dois normalizados; top 10\% do grupo vira sinal. Veem o que os z
+univariados não veem --- ex.: gasto normal com taxa de pagamento
+anormalmente baixa.
+
+\subsection*{4. A tendência de longo prazo (Theil--Sen)}
+
+Para séries com $\geq 8$ anos, reta de tendência robusta (inclinação =
+mediana das inclinações entre todos os pares de pontos); resíduo de cada
+ano padronizado pelo desvio robusto ($\mathrm{MAD}\times 1{,}4826$);
+resíduo $> 2{,}5$ desvios vira \textbf{evento}. Capta platôs e desvios de
+vários anos; empiricamente só 2\% dos eventos coincidem com
+\texttt{flag\_salto\_anual} --- critérios complementares.
+
+\subsection*{Medidas que não geram sinal por entidade}
+
+\textbf{Lei de Benford}: conformidade de um \emph{grupo inteiro} --- não
+diz nada sobre uma linha específica; não informativa nestes agregados.
+\textbf{Incoerências contábeis} (\texttt{pago > empenhado}, negativos):
+flags de regra direta, raras (1 linha em todo o Conjunto A).
+
+\subsection*{Consolidação e cruzamentos IBGE}
+
+Um caso entra na lista priorizada se \emph{algum} sinal disparou; a
+ordenação prioriza o \textbf{número de sinais independentes
+concordantes}, depois o score. Nos cruzamentos IBGE, o mesmo z robusto é
+aplicado transversalmente às 27 UFs (per capita e por PIB).
+
+\textbf{Leitura obrigatória:} um z-score alto diz ``isso é raro dado o
+padrão de comparação'' --- não diz \emph{por quê}. Padrões já explicados
+(universidades novas em rampa, folha de pagamento, dominância de escala)
+permanecem estatisticamente extremos mesmo sendo legítimos.
+
 \section*{Instrução de manutenção deste relatório}
 \addcontentsline{toc}{section}{Instrução de manutenção deste relatório}
 

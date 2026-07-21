@@ -24,6 +24,12 @@ def test_rota_responde_com_grafico(cliente, rota):
     assert b"data:image/png;base64," in resposta.data
 
 
+def test_pagina_metodologia(cliente):
+    resposta = cliente.get("/metodologia")
+    assert resposta.status_code == 200
+    assert "z-score robusto".encode() in resposta.data
+
+
 def test_instituicao_via_query_string(cliente):
     resposta = cliente.get("/instituicoes?orgao=Universidade Federal Fluminense")
     assert resposta.status_code == 200

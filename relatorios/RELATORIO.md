@@ -936,6 +936,92 @@ Conjunto B com fallback para o nome completo). Rodar:
 `uv run --group painel python painel/app.py`; teste de fumaça das rotas
 em `tests/test_painel.py` (pulado automaticamente sem o grupo `painel`).
 
+## VI.6 Apêndice metodológico — o que cada medida de anomalia significa
+
+Adicionado em 2026-07-21 a pedido do usuário: definição, fórmula e leitura
+de cada medida usada nas Fases 1–4 e exibida no painel (que ganhou uma
+página "Medidas" com este mesmo conteúdo). O projeto usa **quatro famílias
+independentes de sinal**; nenhuma "detecta fraude" — cada uma responde a
+uma pergunta estatística diferente, e um caso só ganha prioridade quando
+várias respondem "atípico" ao mesmo tempo.
+
+### 1. A própria história da série (z-scores temporais)
+
+- **z-score clássico** (`zscore_pago`): `z = (x − média) / desvio-padrão`,
+  calculado sobre o histórico da própria série. Mede quantos
+  desvios-padrão o valor do ano dista da média histórica; sob normalidade,
+  |z| > 3 ocorreria em menos de 0,3% dos anos. Fraqueza conhecida: média e
+  desvio-padrão são "puxados" pelo próprio outlier que se quer detectar.
+- **z-score robusto** (`zscore_robusto_pago`):
+  `z = 0,6745 · (x − mediana) / MAD`, onde MAD é a mediana dos desvios
+  absolutos em torno da mediana. Mediana e MAD quase não se movem com um
+  ponto extremo — o outlier não consegue mascarar a si mesmo. O fator
+  0,6745 calibra a escala para que, sob normalidade, o valor seja
+  comparável ao z clássico; limiar |z| > 3,5.
+- **Salto anual** (`flag_salto_anual`): |variação real anual| > 100% — o
+  valor mais que dobrou, ou caiu para menos da metade, em R$ constantes.
+  Sensível a rupturas de 1 ano; cego para desvios graduais.
+
+Todos calculados sobre `pago_real` (deflacionado), excluindo ano parcial
+e séries com menos de 5 anos da base estatística (Fase 1).
+
+### 2. Os pares (`zscore_pago_entre_pares`)
+
+O mesmo z-score, mas transversal: compara a instituição com as **outras
+instituições do mesmo `tipo_instituicao` no mesmo ano**. Capta "gasta
+muito acima/abaixo dos semelhantes" mesmo quando a própria história é
+estável. Limiar |z| > 3.
+
+### 3. Combinações de variáveis (Isolation Forest + LOF, tarefa 2.3)
+
+Modelos multivariados sobre 5 variáveis simultâneas (`pago_real`,
+`taxa_liquidacao`, `taxa_pagamento`, `variacao_pago_aa`,
+`restos_a_pagar_frac`):
+
+- **Isolation Forest**: árvores de cortes aleatórios; um ponto isolável
+  com poucos cortes é anômalo no sentido *global*.
+- **LOF** (Local Outlier Factor): compara a densidade de vizinhos do
+  ponto com a densidade dos próprios vizinhos; ponto em região "rala" é
+  anômalo no sentido *local*.
+
+`score_anomalia` = média dos dois scores normalizados; o top 10% do grupo
+vira sinal na consolidação. Esses modelos veem o que os z univariados não
+veem — ex.: gasto de nível normal com taxa de pagamento anormalmente
+baixa.
+
+### 4. A tendência de longo prazo (Theil–Sen, tarefa 2.4)
+
+Para séries com ≥ 8 anos, ajusta-se uma reta de tendência robusta
+(inclinação = mediana das inclinações entre todos os pares de pontos). O
+resíduo de cada ano é padronizado pelo desvio robusto (MAD × 1,4826);
+resíduo > 2,5 desvios vira **evento**. Capta platôs e desvios de vários
+anos que a comparação ano-a-ano não sinaliza — empiricamente, só 2% dos
+eventos coincidem com `flag_salto_anual` (tarefa 2.4): critérios
+complementares, não redundantes.
+
+### Medidas que não geram sinal por entidade
+
+- **Lei de Benford** (tarefa 2.2): testa a conformidade da distribuição
+  de primeiros dígitos de um *grupo inteiro* — não diz nada sobre uma
+  linha específica; foi considerada não informativa nestes agregados.
+- **Incoerências contábeis** (`pago > empenhado`, valores negativos):
+  flags de regra direta, raras nos dados (1 linha em todo o Conjunto A).
+
+### Consolidação (tarefa 2.5) e cruzamentos IBGE (tarefa 4.4)
+
+Um caso entra na lista priorizada se *algum* sinal disparou de fato; a
+ordenação prioriza o **número de sinais independentes concordantes**,
+depois o score — dois métodos diferentes apontando a mesma
+instituição/ano valem mais que um sinal isolado forte. Nos cruzamentos
+IBGE, o mesmo z robusto é aplicado transversalmente às 27 UFs (per capita
+e por PIB); UF atípica nos dois denominadores concentra emendas além do
+que tamanho populacional ou econômico explicam.
+
+**Leitura obrigatória de todas as medidas:** um z-score alto diz "isso é
+raro dado o padrão de comparação" — não diz *por quê*. Padrões já
+explicados (universidades novas em rampa, folha de pagamento, dominância
+de escala) permanecem estatisticamente extremos mesmo sendo legítimos.
+
 ---
 
 ## Instrução de manutenção deste relatório

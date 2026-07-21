@@ -1,0 +1,245 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Idioma e codificação ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+
+% --- Layout ---
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{parskip}
+
+% --- Tabelas, cores e código ---
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+
+% --- Links e metadados ---
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    urlcolor=blue!50!black,
+    pdftitle={Sucuri --- Guia das coletas manuais pendentes},
+    pdfauthor={Projeto Sucuri}
+}
+
+\definecolor{codebg}{RGB}{245,245,245}
+\lstset{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    showstringspaces=false,
+    columns=fullflexible,
+}
+
+\title{Sucuri --- Guia das coletas manuais pendentes\\
+\large O que baixar, onde salvar e o que cada arquivo destrava}
+\author{Projeto Sucuri}
+\date{21 de julho de 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Contexto}
+
+Todo o pipeline automatizável do projeto já roda sozinho: despesas do
+Portal da Transparência (com recoleta incremental), IPCA do Banco Central
+e população/PIB do IBGE via sidrapy. O que resta são \textbf{fontes sem
+API pública utilizável}, que dependem de download ou consulta manual.
+Este guia detalha cada uma: passo a passo, nome exato do arquivo de
+destino e qual tarefa do \texttt{ROADMAP.md} ela destrava. As mesmas
+referências, em forma resumida, estão em \texttt{EXTERNAL.md} (itens
+E2--E7).
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+Item & Fonte & Destrava & Esforço estimado \\
+\midrule
+E3 & INEP (Censo da Educação Superior) & Tarefa 4.1 (custo por aluno) & $\sim$30 min \\
+E4 & SIOP (Painel do Orçamento) & Tarefa 4.2 (dotação × execução) & $\sim$30 min \\
+E5 & TCU / CGU (consulta caso a caso) & Tarefa 4.3 (validação externa) & horas, iterativo \\
+E6 & Portal (download em lote, 1 mês) & Escala das tarefas 3.1/3.7 & $\sim$20 min \\
+E7 & API do Portal (reexecução) & Fechar ressalva da tarefa 3.6 & $\sim$30 min de máquina \\
+\bottomrule
+\end{tabular}
+\caption{Visão geral das pendências. Prioridade sugerida: E5 primeiro
+(única forma de calibrar a precisão dos sinais já produzidos), depois E3 e E4.}
+\end{table}
+
+\section{E3 --- Matrículas por IES (INEP): destrava a tarefa 4.1}
+
+\textbf{Para quê:} calcular \texttt{custo\_por\_aluno} por instituição/ano
+(pago real do Conjunto B $\div$ matrículas) e apontar outliers dentro de
+cada tipo de instituição. Sem o denominador de matrículas, o ranking de
+instituições fica em valor absoluto (ressalva registrada na tarefa 2.1).
+
+\textbf{Passo a passo:}
+\begin{enumerate}
+    \item Acesse
+    \url{https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados/censo-da-educacao-superior}.
+    \item Não é preciso baixar o microdado completo ($\sim$GB): procure a
+    \textbf{``Sinopse Estatística da Educação Superior''} do ano desejado
+    (arquivo \texttt{.xlsx}, dezenas de MB). A aba de interesse é a de
+    matrículas por instituição (IES).
+    \item Baixe um arquivo por ano, de 2014 até o último ano publicado
+    (o Censo tem defasagem de $\sim$2 anos).
+    \item Salve como:
+    \texttt{dados/externos/inep/matriculas\_ies\_<ano>.xlsx}
+    (criar a pasta \texttt{inep/}; manter um arquivo por ano).
+\end{enumerate}
+
+\textbf{Verificação rápida:} a sinopse deve listar as $\sim$110
+instituições federais do Conjunto B (universidades e IFs) pelo nome ou
+código e-MEC. \textbf{Atenção conhecida:} o nome da IES no INEP não bate
+exatamente com o nome do órgão no Portal da Transparência (ex.:
+``Universidade Federal Fluminense'' vs.\ ``UFF''); o cruzamento da tarefa
+4.1 precisará de uma tabela de correspondência --- o dicionário de siglas
+já existente em \texttt{sucuri.utils.sigla\_instituicao} é o ponto de
+partida.
+
+\textbf{Depois de salvar:} avisar na sessão de trabalho (ou executar a
+tarefa 4.1 do ROADMAP), que produzirá
+\texttt{dados/custo\_por\_aluno.parquet} com a ressalva obrigatória de que
+o denominador não separa hospital universitário/pesquisa.
+
+\section{E4 --- Dotação orçamentária (SIOP): destrava a tarefa 4.2}
+
+\textbf{Para quê:} comparar a dotação autorizada (LOA + créditos) com o
+empenhado do Conjunto A e sinalizar execução $<60\%$ ou $>100\%$ da
+dotação por programa/ação --- um sinal de anomalia que a execução sozinha
+não revela.
+
+\textbf{Passo a passo:}
+\begin{enumerate}
+    \item Acesse o Painel do Orçamento:
+    \url{https://www1.siop.planejamento.gov.br/paineldoorcamento/}.
+    \item No painel principal, aplique os filtros: \textbf{Função = 12
+    (Educação)} e \textbf{Subfunção = 364 (Ensino Superior)}; período
+    \textbf{2014 até o ano atual}.
+    \item Configure a visualização para detalhar por \textbf{Programa} e
+    \textbf{Ação} (mesma granularidade do Conjunto A) e inclua as medidas
+    \textbf{Dotação Atualizada} (e, se disponível, Dotação Inicial).
+    \item Exporte como CSV (botão de exportação do painel).
+    \item Salve como: \texttt{dados/externos/siop\_dotacao.csv}.
+\end{enumerate}
+
+\textbf{Verificação rápida:} o arquivo deve ter uma linha por
+ano×programa×ação com códigos numéricos de programa/ação --- são esses
+códigos (não os nomes) que casam com \texttt{codigoPrograma}/
+\texttt{codigoAcao} do Conjunto A. Se o painel só exportar nomes,
+reexporte incluindo as colunas de código.
+
+\textbf{Depois de salvar:} tarefa 4.2 produz a tabela de divergências
+dotação × execução por ano.
+
+\section{E5 --- Acórdãos TCU / relatórios CGU: destrava a tarefa 4.3}
+
+\textbf{Para quê:} a única validação externa possível dos sinais já
+produzidos. Sem ela, a precisão dos 176 casos priorizados é desconhecida
+por construção. O objetivo é calibrar (``quantos dos top casos aparecem em
+achados públicos?''), \textbf{não} ``confirmar culpa''.
+
+\textbf{Passo a passo (iterativo, caso a caso):}
+\begin{enumerate}
+    \item Abra a lista de casos: \texttt{dados/casos\_priorizados.csv}
+    (ou a página ``Anomalias'' do painel Flask, filtrando por 3 sinais).
+    \item \textbf{Prioridade máxima:} ``Fundação Euclides da Cunha de
+    Apoio Institucional à UFF'' --- único caso atípico em três fontes
+    independentes da Fase 3 (concentração de 86,6\% dos contratos da UFF,
+    padrão compatível com fracionamento de dispensas e convênios de
+    R\$~8,3 milhões). Em seguida: UFRRJ (queda 2019--2021) e UNIVASF
+    (salto 2024--2025).
+    \item No TCU, pesquise cada instituição em
+    \url{https://pesquisa.apps.tcu.gov.br/} (filtrar por acórdãos;
+    restringir ao período do sinal ajuda).
+    \item Na CGU, pesquise relatórios de auditoria por órgão em
+    \url{https://eaud.cgu.gov.br/}.
+    \item Para cada caso consultado, anote: instituição, ano do sinal,
+    consulta feita, resultado (\textbf{sim} / \textbf{não} /
+    \textbf{não pesquisável}) e link/número do acórdão ou relatório.
+    \item Salve as notas em:
+    \texttt{dados/externos/tcu\_cgu\_notas.md} (formato livre, uma seção
+    por caso).
+\end{enumerate}
+
+\textbf{Depois de salvar:} tarefa 4.3 consolida a tabela caso × achado
+público em \texttt{relatorios/validacao\_tcu.md}. Encontrar ``não'' em
+muitos casos é resultado útil (indica falso positivo ou achado ainda não
+auditado) --- não força o sinal a ``estar certo''.
+
+\section{E6 --- Mapa código de órgão $\to$ Unidade Gestora: escala das tarefas 3.1 e 3.7}
+
+\textbf{Para quê:} os endpoints \texttt{/despesas/documentos} e
+\texttt{/emendas/documentos} identificam a instituição por
+\textbf{Unidade Gestora (UG, 6 dígitos SIAFI)}, incompatível com o
+\texttt{codigoOrgao} (5 dígitos) usado no resto do projeto, e a API não
+tem conversor. Sem esse mapa, a análise por documento só existe para o
+piloto (Ouro Preto) e as emendas não são atribuíveis a instituição.
+
+\textbf{Passo a passo:}
+\begin{enumerate}
+    \item Acesse \url{https://portaldatransparencia.gov.br/download-de-dados}.
+    \item Baixe \textbf{um único mês} (qualquer mês recente) do conjunto
+    \textbf{``Despesas --- Execução''} (zip com CSVs mensais).
+    \item Salve o zip em
+    \texttt{dados/externos/portal\_lote/despesas\_execucao/} (manter o
+    nome original do arquivo).
+    \item O CSV traz \texttt{codigoOrgao} e \texttt{codigoUg} na mesma
+    linha: extraia os pares únicos e salve como
+    \texttt{dados/externos/mapa\_orgao\_ug.csv} com as colunas
+    \texttt{codigoOrgao,codigoUg,nomeOrgao} (a extração pode ser feita na
+    sessão de trabalho --- basta o zip estar salvo).
+\end{enumerate}
+
+\textbf{Depois de salvar:} \texttt{analises/07\_despesas\_documentos.py}
+pode rodar para qualquer instituição do Conjunto B, e as emendas da
+tarefa 3.7 passam a ser analisáveis por instituição (hoje: só agregado
+nacional/UF).
+
+\section{E7 --- Reexecução do CPGF do EBSERH: fecha a ressalva da tarefa 3.6}
+
+\textbf{Para quê:} a coleta de cartões do EBSERH recebeu HTTP 400 na
+página 175 --- erro de servidor que o código trata como fim de paginação;
+os 2.610 registros salvos podem estar truncados.
+
+\textbf{Passo a passo (comando longo, rodar fora do horário comercial ---
+limite de $\sim$90 req/min):}
+\begin{lstlisting}
+cd ~/Library/CloudStorage/Dropbox/Repositories/seixas-solutions/sucuri
+uv run python - <<'PY'
+from sucuri.api import ENV_PATH_PADRAO, carregar_chave_api, criar_sessao
+from sucuri.coletores.cartoes import coletar_cartoes
+sessao = criar_sessao(carregar_chave_api(ENV_PATH_PADRAO))
+# ano a ano para contornar o erro pontual do servidor:
+total = 0
+for ano in (2023, 2024, 2025):
+    registros = coletar_cartoes(sessao, "26443", ano, ano)
+    total += len(registros)
+    print(ano, len(registros))
+print("total EBSERH:", total)
+PY
+\end{lstlisting}
+
+\textbf{Interpretação:} se o total por janelas anuais superar 2.610, a
+coleta original estava truncada --- refazer a análise 3.6 para o EBSERH;
+se bater, a ressalva pode ser fechada como ``sem truncamento''.
+
+\section*{Depois de tudo coletado}
+
+Com E3--E5 em \texttt{dados/externos/}, as tarefas 4.1--4.3 do ROADMAP
+deixam de estar bloqueadas e podem ser executadas normalmente (cada uma
+registra método e resultados em \texttt{relatorios/RELATORIO.md} e na
+versão LaTeX, como as demais). A rotina mensal de manutenção do restante
+do pipeline segue automatizada --- ver \texttt{EXTERNAL.md}, item X1b.
+
+\textbf{Ressalva permanente:} nada nestas fontes ``confirma''
+irregularidade; elas adicionam contexto (custo por aluno, dotação,
+achados públicos) para separar atipicidade explicável de indício que
+mereça checagem por quem tem competência para tanto.
+
+\end{document}

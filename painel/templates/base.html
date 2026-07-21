@@ -48,7 +48,8 @@
   <span class="marca">🐍 Sucuri</span>
   {% for rota, titulo in [('visao_geral', 'Visão geral'), ('instituicoes', 'Instituições'),
                           ('anomalias', 'Anomalias'), ('contratos', 'Contratos'),
-                          ('ibge', 'IBGE')] %}
+                          ('ibge', 'IBGE'),
+                          ('metodologia', 'Medidas')] %}
     <a href="{{ url_for(rota) }}" class="{{ 'ativa' if request.endpoint == rota }}">{{ titulo }}</a>
   {% endfor %}
 </nav>

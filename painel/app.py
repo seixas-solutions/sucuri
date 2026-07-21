@@ -307,6 +307,11 @@ def contratos():
     )
 
 
+@app.route("/metodologia")
+def metodologia():
+    return render_template("metodologia.html", aviso=AVISO_METODOLOGICO)
+
+
 @app.route("/ibge")
 def ibge():
     per_capita = carregar("per_capita_nacional.csv")

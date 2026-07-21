@@ -85,6 +85,11 @@ print(df[['codigoOrgao','orgao']].drop_duplicates().to_string(index=False))
 
 ## Downloads manuais / em lote
 
+> **Guia detalhado:** `relatorios/coletas_finais/main.tex` (+ `main.pdf`)
+> traz o passo a passo de cada coleta manual pendente (E3–E7): URLs,
+> filtros, nome exato do arquivo de destino e qual tarefa cada uma
+> destrava.
+
 ### E1. IPCA anual (pré-requisito da tarefa 1.2) — ✅ automatizado
 - **Automatizado** em `analises/00_baixar_ipca.py`: baixa a série mensal do
   IPCA (Banco Central, SGS série 433 —

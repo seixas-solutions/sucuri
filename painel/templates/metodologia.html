@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>O que cada medida de anomalia significa</h1>
+<p>O projeto usa <strong>quatro famílias independentes de sinal</strong>. Nenhuma delas
+"detecta fraude": cada uma responde a uma pergunta estatística diferente, e um caso só
+ganha prioridade quando várias respondem "atípico" ao mesmo tempo (triangulação).</p>
+
+<h2>1. A própria história da instituição (z-scores de série temporal)</h2>
+<p><strong>z-score clássico</strong> (<code>zscore_pago</code>): quantos desvios-padrão o valor
+pago do ano está distante da <em>média histórica da própria série</em> —
+<code>z = (x − média) / desvio-padrão</code>. Um |z| &gt; 3 significa que, se a série se
+comportasse como uma distribuição normal, um valor assim apareceria em menos de 0,3% dos
+anos. Fraqueza: a média e o desvio são "puxados" pelo próprio outlier que se quer detectar.</p>
+<p><strong>z-score robusto</strong> (<code>zscore_robusto_pago</code>):
+<code>z = 0,6745 · (x − mediana) / MAD</code>, onde MAD é a mediana dos desvios absolutos
+em torno da mediana. Mediana e MAD quase não se movem com um ponto extremo, então o outlier
+não consegue "esconder a si mesmo". O fator 0,6745 calibra a escala para dados normais, de
+modo que o limiar usado (|z| &gt; 3,5) seja comparável ao do z clássico.</p>
+<p><strong>Salto anual</strong> (<code>flag_salto_anual</code>): variação real de mais de
+100% contra o ano anterior — o valor mais que dobrou, ou caiu para menos da metade, em R$
+constantes. Sensível a mudanças abruptas de um ano; cego para desvios graduais.</p>
+<p>Todos calculados sobre <code>pago_real</code> (deflacionado), excluindo o ano parcial e
+séries com menos de 5 anos — as duas maiores fontes de falso positivo do projeto.</p>
+
+<h2>2. Os pares (z-score entre instituições do mesmo tipo)</h2>
+<p><code>zscore_pago_entre_pares</code>: o mesmo z-score, mas comparando a instituição com
+as <em>outras instituições do mesmo tipo no mesmo ano</em> (universidade com universidades,
+IF com IFs). Capta "gasta muito acima/abaixo dos semelhantes" mesmo quando a própria
+história da instituição é estável. Limiar: |z| &gt; 3.</p>
+
+<h2>3. Combinações de variáveis (Isolation Forest + LOF)</h2>
+<p>Modelos multivariados sobre 5 variáveis simultâneas (nível real de gasto, taxa de
+liquidação, taxa de pagamento, variação anual, fração de restos a pagar):</p>
+<ul>
+  <li><strong>Isolation Forest</strong>: constrói árvores de cortes aleatórios; um ponto
+  que fica sozinho com poucos cortes é fácil de isolar — anômalo no sentido
+  <em>global</em>.</li>
+  <li><strong>LOF</strong> (Local Outlier Factor): compara a densidade de vizinhos do ponto
+  com a densidade dos próprios vizinhos; ponto em região "rala" é anômalo no sentido
+  <em>local</em>.</li>
+</ul>
+<p><code>score_anomalia</code> é a média dos dois scores normalizados; o top 10% do grupo
+vira sinal. Esses modelos veem o que os z-scores univariados não veem — ex.: gasto normal
+com taxa de pagamento anormalmente baixa.</p>
+
+<h2>4. A tendência de longo prazo (Theil–Sen)</h2>
+<p>Para séries com ≥ 8 anos, ajusta-se uma reta de tendência <em>robusta</em> (Theil–Sen:
+a inclinação é a mediana das inclinações entre todos os pares de pontos). O resíduo de cada
+ano (distância à reta) é padronizado pelo desvio robusto (MAD × 1,4826); resíduo &gt; 2,5
+desvios vira <strong>evento</strong>. Capta platôs e desvios de vários anos que a comparação
+ano-a-ano não sinaliza — na prática, só 2% dos eventos coincidem com
+<code>flag_salto_anual</code>: os dois critérios são complementares.</p>
+
+<h2>Medidas que NÃO geram sinal por entidade</h2>
+<p><strong>Lei de Benford</strong> testa a conformidade da distribuição de primeiros
+dígitos de um <em>grupo inteiro</em> — não diz nada sobre uma linha específica. Neste
+projeto foi considerada não informativa (amostras pequenas no Conjunto A; totais
+institucionais concentrados numa faixa estreita de magnitude no B).
+<strong>Incoerências contábeis</strong> (pago &gt; empenhado, valores negativos) são flags
+de regra direta, raras nos dados (1 linha em todo o Conjunto A).</p>
+
+<h2>Como os sinais viram "casos priorizados"</h2>
+<p>Um caso entra na lista se <em>algum</em> sinal disparou de fato (flag ativa, top 10% do
+score multivariado, ou evento de tendência). A ordenação prioriza o <strong>número de
+sinais independentes concordantes</strong>, depois o score: dois métodos diferentes
+apontando a mesma instituição/ano valem mais que um sinal isolado forte.</p>
+
+<h2>Nos cruzamentos IBGE</h2>
+<p>O mesmo z-score robusto é aplicado <em>transversalmente</em> às 27 UFs (emendas per
+capita e emendas por PIB, limiar |z| &gt; 3,5). UF atípica nos dois denominadores concentra
+emendas além do que tamanho populacional ou econômico explicam.</p>
+
+<div class="aviso">⚠️ Em todas as medidas: atipicidade estatística ≠ irregularidade.
+Um z-score alto diz "isso é raro dado o padrão de comparação" — não diz por quê. Padrões
+já explicados (universidades novas em rampa de implantação, folha de pagamento, dominância
+de escala) permanecem estatisticamente extremos mesmo sendo legítimos; a lista de casos
+marca esses padrões para serem priorizados por último.</div>
+{% endblock %}
